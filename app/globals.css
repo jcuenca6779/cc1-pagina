@@ -13,3 +13,60 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ===== FOOTER LOGOS (AJUSTADO) ===== */
+
+.footer-logos {
+  max-width: 800px;            /* MÁS angosto = logos más unidos */
+  margin: 0 auto 2.2rem auto;  /* un poco menos separación abajo */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  column-gap: 16px;            /* controla la distancia entre columnas */
+  padding: 0 12px;
+}
+
+/* Posiciones */
+.portocomercio { justify-self: start; }
+.logo-gobierno { justify-self: center; text-align: center; }
+.logo-alcaldia { justify-self: end; }
+
+.footer-logos img {
+  display: block;
+  height: auto;
+}
+
+/* Limita los laterales para que no se “abran” demasiado */
+.portocomercio img,
+.logo-alcaldia img {
+  max-width: 150px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .footer-logos {
+    max-width: 100%;
+    grid-template-columns: 1fr;
+    row-gap: 1.6rem;
+    text-align: center;
+  }
+
+  .portocomercio,
+  .logo-gobierno,
+  .logo-alcaldia {
+    justify-self: center;
+  }
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #2FB762 33.24%, #0ACEE5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;                 /* CLAVE */
+  -webkit-text-fill-color: transparent;
+  display: inline-block;              /* ayuda a que se renderice bien */
+}
+
+.text-3xl{
+  padding-bottom: 1rem;
+}

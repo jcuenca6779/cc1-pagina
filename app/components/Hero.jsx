@@ -6,7 +6,7 @@ export default function Hero() {
       {/* Imagen de fondo */}
       <div className="absolute inset-0">
         <Image
-          src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&h=800&fit=crop"
+          src="/assets/images/cc1dron.jpeg"
           alt="Comercio y negocios"
           fill
           className="object-cover"
@@ -17,18 +17,22 @@ export default function Hero() {
       </div>
 
       {/* Contenido centrado */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-4">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4">
         {/* Logotipo blanco grande */}
         <div className="mb-6">
-          <div className="bg-white/20 backdrop-blur-sm px-12 py-6 rounded-lg border border-white/30">
-            <h1 className="text-4xl md:text-6xl font-bold text-white">
-              LOGO CC1
-            </h1>
+          <div className="px-12 py-6 ">
+             <Image
+                          src="/assets/images/logominimocc1blanco.png"
+                          alt="Logo PortoComercio EP"
+                          width={420}
+                          height={460}
+                          priority
+                        />
           </div>
         </div>
 
         {/* Texto elegante en cursiva */}
-        <p className="text-2xl md:text-3xl lg:text-4xl text-white italic font-light tracking-wide">
+        <p className="text-2xl italic font-light tracking-wide text-white md:text-3xl lg:text-4xl">
           ¡La capital del Comercio!
         </p>
       </div>

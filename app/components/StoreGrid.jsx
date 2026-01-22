@@ -6,28 +6,28 @@ export default function StoreGrid() {
   }))
 
   return (
-    <div className="bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-8 bg-gray-50">
+      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         {/* Título de Sección */}
-        <h2 className="text-3xl font-bold text-cyan-600 mb-8">
+        <h2 className="text-3xl font-bold gradient-text">
           Locales
         </h2>
 
         {/* Grid de Tarjetas */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
           {stores.map((store) => (
             <div
               key={store.id}
-              className="bg-white border border-gray-300 rounded-lg p-4 aspect-square flex flex-col items-center justify-center hover:shadow-md transition-shadow duration-200 cursor-pointer"
+              className="flex flex-col items-center justify-center p-4 transition-shadow duration-200 bg-white border border-gray-300 rounded-lg cursor-pointer aspect-square hover:shadow-md"
             >
               {/* Logo placeholder */}
-              <div className="w-16 h-16 bg-gray-200 rounded-full mb-3 flex items-center justify-center">
-                <span className="text-gray-500 text-xs font-bold">
+              <div className="flex items-center justify-center w-16 h-16 mb-3 bg-gray-200 rounded-full">
+                <span className="text-xs font-bold text-gray-500">
                   LOGO
                 </span>
               </div>
               {/* Nombre del local */}
-              <span className="text-sm text-gray-700 font-medium text-center">
+              <span className="text-sm font-medium text-center text-gray-700">
                 {store.name}
               </span>
             </div>

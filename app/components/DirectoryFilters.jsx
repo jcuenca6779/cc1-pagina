@@ -19,22 +19,22 @@ export default function DirectoryFilters() {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
   return (
-    <div className="bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-8 bg-gray-50">
+      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         {/* Título de Sección */}
-        <h2 className="text-3xl font-bold text-cyan-600 mb-6">
+        <h2 className="text-3xl font-bold gradient-text">
           Novedades y Noticias
         </h2>
 
         {/* Barra de Herramientas */}
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="flex flex-col gap-4 mb-6 md:flex-row">
           {/* Input de búsqueda */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <div className="relative flex-1">
+            <Search className="absolute text-gray-400 transform -translate-y-1/2 left-4 top-1/2" size={20} />
             <input
               type="text"
               placeholder="Buscar local..."
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full py-3 pl-12 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -43,7 +43,7 @@ export default function DirectoryFilters() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+              className="w-full py-3 pl-4 pr-10 bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -51,7 +51,7 @@ export default function DirectoryFilters() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={20} />
+            <ChevronDown className="absolute text-gray-400 transform -translate-y-1/2 pointer-events-none right-4 top-1/2" size={20} />
           </div>
         </div>
 
