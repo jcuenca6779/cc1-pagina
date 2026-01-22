@@ -34,7 +34,7 @@ export default function DirectoryFilters() {
             <input
               type="text"
               placeholder="Buscar local..."
-              className="w-full py-3 pl-12 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="search-input"
             />
           </div>
 
@@ -43,7 +43,7 @@ export default function DirectoryFilters() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full py-3 pl-4 pr-10 bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="category-select"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -62,13 +62,15 @@ export default function DirectoryFilters() {
               key={letter}
               onClick={() => setSelectedLetter(selectedLetter === letter ? null : letter)}
               className={`w-10 h-10 flex items-center justify-center border rounded text-sm font-medium transition-colors duration-200 ${
-                selectedLetter === letter
-                  ? 'bg-blue-700 text-white border-blue-700'
-                  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+      selectedLetter === letter
+  ? 'bg-[#1d1d99] text-white border-[#1d1d99]'
+  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+
+
               }`}
             >
               {letter}
-            </button>
+            </button> 
           ))}
         </div>
       </div>

@@ -70,3 +70,124 @@ body {
 .text-3xl{
   padding-bottom: 1rem;
 }
+
+/* ===== TARJETAS DE LOCALES ===== */
+
+.store-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 1rem;
+  background-color: #ffffff;              /* fondo */
+  border: 0px solid #d1d5db;             /* borde */
+  border-radius: 30px;
+box-shadow: 0 0 13.8px 2px rgba(0, 0, 0, 0.05);
+
+  cursor: pointer;
+  transition: 
+    box-shadow 0.25s ease,
+    transform 0.2s ease,
+    border-color 0.25s ease,
+    background-color 0.25s ease;
+}
+
+.store-card:hover {
+  background-color: #F1F1F1;
+  border-color: #0ACEE5;                  /* color institucional */
+  box-shadow: 0 10px 24px rgba(17, 165, 182, 0.08);
+  transform: translateY(-3px);
+}
+
+/* ===== INPUT BUSCADOR ===== */
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem; /* top right bottom left */
+  
+  border: 1.5px solid #d1d5db;
+  border-radius: 30px;
+  background-color: #ffffff;
+
+  font-size: 0.95rem;
+  color: #374151;
+
+  outline: none;
+  transition: 
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    background-color 0.25s ease;
+}
+
+.search-input:focus {
+  border-color: #0ACEE5; /* color institucional */
+  box-shadow: 0 0 0 3px rgba(10, 206, 229, 0.25);
+  background-color: #ffffff;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.search-input:-webkit-autofill {
+  box-shadow: 0 0 0px 1000px #ffffff inset;
+  -webkit-text-fill-color: #374151;
+}
+
+.search-wrapper {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+/* Select (botón cerrado) */
+.category-select {
+  width: 100%;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+
+  border: 2px solid #0ACEE5;
+  border-radius: 14px;
+  background-color: #ffffff;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  outline: none;
+  cursor: pointer;
+
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.category-select:focus {
+  box-shadow: 0 0 0 4px rgba(10, 206, 229, 0.25);
+}
+
+/* Opciones (lo que sí deja el navegador) */
+.category-select option {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1f2937;
+  background-color: #ffffff;
+  padding: 12px; /* en algunos navegadores aplica */
+  border-radius: 14px;
+  border-color: none;
+}
+
+/* Hover/seleccionado (limitado por navegador) */
+.category-select option:checked {
+  background: #0ACEE5;
+  color: #ffffff;
+}

@@ -18,7 +18,7 @@ export default function StoreGrid() {
           {stores.map((store) => (
             <div
               key={store.id}
-              className="flex flex-col items-center justify-center p-4 transition-shadow duration-200 bg-white border border-gray-300 rounded-lg cursor-pointer aspect-square hover:shadow-md"
+              className="store-card aspect-square"
             >
               {/* Logo placeholder */}
               <div className="flex items-center justify-center w-16 h-16 mb-3 bg-gray-200 rounded-full">
