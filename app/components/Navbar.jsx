@@ -2,16 +2,23 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 
 export default function Navbar() {
+  const pathname = usePathname()
   const menuItems = [
     { name: 'Inicio', href: '/' },
-    { name: 'Institución', href: '/institucion' },
-    { name: 'Transparencia', href: '/transparencia' },
-    { name: 'Servicios en Línea', href: '/servicios' },
-    { name: 'Contáctenos', href: '/contacto' },
-    { name: 'Encuestas', href: '/encuestas' },
+    { name: 'Locales', href: '/locales' },
+    { name: 'Contactenos', href: '/contacto' },
   ]
+
+  const isActiveRoute = (href) => {
+    if (href === '/') {
+      return pathname === '/'
+    }
+
+    return pathname.startsWith(href)
+  }
 
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-sm">
@@ -33,30 +40,52 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Menú central */}
+          {/* Menu central */}
           <div className="hidden mx-auto md:flex md:items-center md:space-x-6 lg:space-x-8">
             {menuItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className="font-medium text-gray-700 transition-colors duration-200 hover:text-blue-600"
+                className={`group relative inline-flex items-center pb-1 font-medium transition-colors duration-200 ${
+                  isActiveRoute(item.href)
+                    ? 'text-blue-600'
+                    : 'text-gray-700 hover:text-blue-600'
+                }`}
               >
-                {item.name}
+                <span className="relative z-10">{item.name}</span>
+                <span
+                  className={`absolute left-0 right-0 -bottom-0.5 h-0.5 rounded-full bg-blue-600 transition-transform duration-200 ${
+                    isActiveRoute(item.href)
+                      ? 'scale-x-100'
+                      : 'scale-x-0 group-hover:scale-x-100'
+                  } origin-left`}
+                />
               </Link>
             ))}
           </div>
         </div>
 
-        {/* Menú móvil */}
+        {/* Menu movil */}
         <div className="pb-4 md:hidden">
           <div className="flex flex-wrap gap-3">
             {menuItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-sm font-medium text-gray-700 transition-colors hover:text-blue-600"
+                className={`group relative inline-flex items-center pb-1 text-sm font-medium transition-colors ${
+                  isActiveRoute(item.href)
+                    ? 'text-blue-600'
+                    : 'text-gray-700 hover:text-blue-600'
+                }`}
               >
-                {item.name}
+                <span className="relative z-10">{item.name}</span>
+                <span
+                  className={`absolute left-0 right-0 -bottom-0.5 h-0.5 rounded-full bg-blue-600 transition-transform duration-200 ${
+                    isActiveRoute(item.href)
+                      ? 'scale-x-100'
+                      : 'scale-x-0 group-hover:scale-x-100'
+                  } origin-left`}
+                />
               </Link>
             ))}
           </div>
