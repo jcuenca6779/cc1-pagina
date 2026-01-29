@@ -1,5 +1,6 @@
 import { Inter, Roboto } from 'next/font/google'
 import './globals.css'
+import Navbar from './components/Navbar'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -22,7 +23,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="es" className={`${inter.variable} ${roboto.variable}`}>
-      <body className="font-sans">{children}</body>
+      <body className="font-sans">
+        <Navbar />
+        {children}
+      </body>
     </html>
   )
 }
