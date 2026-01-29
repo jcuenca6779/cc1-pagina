@@ -1,67 +1,61 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { createLocal, resolveFotoUrl } from '../../api/locales'
+import { isCloudinaryEnabled, uploadToCloudinary } from '../../api/cloudinary'
 
 const defaultLogo = '/assets/images/logocompleto.png'
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-const apiUrl = apiBaseUrl.replace(/\/$/, '')
+const fallbackCategories = ['Comercio', 'Moda', 'Tecnologia', 'Servicios', 'Gastronomia']
 
-export default function StoreGrid() {
-  const [stores, setStores] = useState([])
+export default function StoreGrid({
+  stores = [],
+  isLoading = false,
+  loadError = '',
+  emptyMessage = 'No hay locales registrados.',
+  categories = [],
+  onLocalCreated = () => {},
+} = {}) {
   const [selectedStore, setSelectedStore] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
   const [formData, setFormData] = useState({
     nombre_local: '',
     actividad: '',
     numero_local: '',
     planta: '',
-    foto_url: '',
+    categoria: categories[0] || fallbackCategories[0],
+    fotoFile: null,
   })
   const [formMessage, setFormMessage] = useState('')
+  const [formHasError, setFormHasError] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [cloudinaryUrl, setCloudinaryUrl] = useState('')
+  const [cloudinaryVariants, setCloudinaryVariants] = useState({
+    optimized: '',
+    cropped: '',
+  })
+  const [cloudinaryError, setCloudinaryError] = useState('')
+  const [cloudinaryPublicId, setCloudinaryPublicId] = useState('')
 
   const isDevEnv = process.env.NODE_ENV !== 'production'
+  const formCategories = useMemo(
+    () => (categories.length > 0 ? categories : fallbackCategories),
+    [categories]
+  )
   const isFormValid =
     formData.nombre_local.trim() &&
     formData.actividad.trim() &&
     formData.numero_local.trim() &&
-    formData.planta.trim()
+    formData.planta.trim() &&
+    formData.categoria.trim()
 
   useEffect(() => {
-    const loadStores = async () => {
-      setIsLoading(true)
-      setLoadError('')
-
-      try {
-        const response = await fetch(`${apiUrl}/locales`, {
-          cache: 'no-store',
-        })
-
-        if (!response.ok) {
-          throw new Error('No se pudo cargar los locales.')
-        }
-
-        const data = await response.json()
-        const mapped = data.map((item) => ({
-          id: item.id,
-          nombreLocal: item.nombre_local,
-          actividad: item.actividad,
-          numeroLocal: item.numero_local,
-          planta: item.planta,
-          foto: item.foto,
-          fotoUrl: item.foto ? `${apiUrl}/uploads/${item.foto}` : null,
-        }))
-
-        setStores(mapped)
-      } catch (error) {
-        setLoadError('No se pudo cargar los locales. Verifica el backend.')
-      } finally {
-        setIsLoading(false)
-      }
+    if (!formCategories.includes(formData.categoria)) {
+      setFormData((prev) => ({
+        ...prev,
+        categoria: formCategories[0] || fallbackCategories[0],
+      }))
     }
-
-    loadStores()
-  }, [])
+  }, [formCategories, formData.categoria])
 
   useEffect(() => {
     if (!selectedStore) {
@@ -86,33 +80,102 @@ export default function StoreGrid() {
     }))
   }
 
-  const handleAddStore = (event) => {
-    event.preventDefault()
-    setFormMessage('')
+  const buildCloudinaryVariant = (url, transform) => {
+    const marker = '/upload/'
+    if (!url || !url.includes(marker)) {
+      return url
+    }
 
-    if (!isDevEnv || !isFormValid) {
+    return url.replace(marker, `/upload/${transform}/`)
+  }
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0] || null
+    setFormData((prev) => ({
+      ...prev,
+      fotoFile: file,
+    }))
+    setCloudinaryUrl('')
+    setCloudinaryVariants({ optimized: '', cropped: '' })
+    setCloudinaryError('')
+
+    if (!file || !isCloudinaryEnabled) {
       return
     }
 
-    const newStore = {
-      id: Date.now(),
-      nombreLocal: formData.nombre_local.trim(),
-      actividad: formData.actividad.trim(),
-      numeroLocal: formData.numero_local.trim(),
-      planta: formData.planta.trim(),
-      foto: null,
-      fotoUrl: formData.foto_url.trim() || null,
+    setIsUploadingImage(true)
+
+    try {
+      const publicId = cloudinaryPublicId.trim()
+      const result = await uploadToCloudinary(
+        file,
+        publicId ? { publicId } : undefined
+      )
+      setCloudinaryUrl(result.secure_url)
+      setCloudinaryVariants({
+        optimized: buildCloudinaryVariant(result.secure_url, 'f_auto,q_auto'),
+        cropped: buildCloudinaryVariant(
+          result.secure_url,
+          'c_auto,g_auto,w_500,h_500'
+        ),
+      })
+    } catch (error) {
+      setCloudinaryError('No se pudo subir la imagen a Cloudinary.')
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  const handleAddStore = async (event) => {
+    event.preventDefault()
+    setFormMessage('')
+    setFormHasError(false)
+
+    if (!isDevEnv || !isFormValid || isSubmitting) {
+      return
     }
 
-    setStores((prev) => [newStore, ...prev])
-    setFormData({
-      nombre_local: '',
-      actividad: '',
-      numero_local: '',
-      planta: '',
-      foto_url: '',
-    })
-    setFormMessage('Local agregado en desarrollo (no se guarda).')
+    setIsSubmitting(true)
+
+    try {
+      const created = await createLocal({
+        nombre_local: formData.nombre_local.trim(),
+        actividad: formData.actividad.trim(),
+        numero_local: formData.numero_local.trim(),
+        planta: formData.planta.trim(),
+        fotoFile: formData.fotoFile,
+      })
+
+      const mapped = {
+        id: created.id,
+        nombreLocal: created.nombre_local,
+        actividad: created.actividad,
+        numeroLocal: created.numero_local,
+        planta: created.planta,
+        foto: created.foto,
+        fotoUrl: cloudinaryUrl || resolveFotoUrl(created.foto),
+        categoria: formData.categoria,
+      }
+
+      onLocalCreated(mapped)
+      setFormMessage('Local agregado en desarrollo.')
+      setFormHasError(false)
+      setFormData({
+        nombre_local: '',
+        actividad: '',
+        numero_local: '',
+        planta: '',
+        categoria: formCategories[0] || fallbackCategories[0],
+        fotoFile: null,
+      })
+      setCloudinaryUrl('')
+      setCloudinaryVariants({ optimized: '', cropped: '' })
+    } catch (error) {
+      setFormMessage('No se pudo crear el local. Verifica el backend.')
+      setFormHasError(true)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -130,7 +193,7 @@ export default function StoreGrid() {
         )}
 
         {!isLoading && !loadError && stores.length === 0 && (
-          <p className="text-sm text-gray-500">No hay locales registrados.</p>
+          <p className="text-sm text-gray-500">{emptyMessage}</p>
         )}
 
         {!isLoading && !loadError && stores.length > 0 && (
@@ -155,6 +218,9 @@ export default function StoreGrid() {
                     <span className="text-xs font-bold text-gray-500">LOGO</span>
                   )}
                 </div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#1d1d99]">
+                  {store.categoria || 'Comercio'}
+                </span>
                 <span className="text-xs font-semibold text-gray-500">
                   Local {store.numeroLocal}
                 </span>
@@ -174,7 +240,7 @@ export default function StoreGrid() {
                   Agregar local (solo desarrollo)
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Estos datos solo se muestran en tu navegador.
+                  Se guarda en la base de datos de desarrollo.
                 </p>
               </div>
               <span className="w-fit rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">
@@ -210,6 +276,22 @@ export default function StoreGrid() {
               </label>
 
               <label className="text-sm font-semibold text-gray-600">
+                Categoria
+                <select
+                  name="categoria"
+                  value={formData.categoria}
+                  onChange={handleChange}
+                  className="category-select mt-2"
+                >
+                  {formCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-sm font-semibold text-gray-600">
                 Numero de local
                 <input
                   type="text"
@@ -236,19 +318,86 @@ export default function StoreGrid() {
               </label>
 
               <label className="text-sm font-semibold text-gray-600 md:col-span-2">
-                Foto o logo (URL opcional)
+                Public ID Cloudinary (opcional)
                 <input
                   type="text"
-                  name="foto_url"
-                  value={formData.foto_url}
-                  onChange={handleChange}
+                  name="cloudinary_public_id"
+                  value={cloudinaryPublicId}
+                  onChange={(event) => setCloudinaryPublicId(event.target.value)}
                   className="search-input mt-2"
-                  placeholder="https://..."
+                  placeholder="ej: local-cc1"
                 />
               </label>
 
+              <label className="text-sm font-semibold text-gray-600 md:col-span-2">
+                Foto o logo (opcional)
+                <input
+                  type="file"
+                  name="foto"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="search-input mt-2"
+                />
+              </label>
+
+              {isUploadingImage && (
+                <p className="text-sm text-gray-500 md:col-span-2">
+                  Subiendo imagen...
+                </p>
+              )}
+
+              {cloudinaryError && (
+                <p className="text-sm text-red-500 md:col-span-2">
+                  {cloudinaryError}
+                </p>
+              )}
+
+              {cloudinaryUrl && (
+                <div className="md:col-span-2">
+                  <p className="text-sm text-gray-500">Vista previa:</p>
+                  <div className="mt-2 h-28 w-28 overflow-hidden rounded-xl bg-gray-100">
+                    <img
+                      src={cloudinaryUrl}
+                      alt="Vista previa del logo"
+                      className="h-full w-full object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                  {cloudinaryVariants.optimized && cloudinaryVariants.cropped && (
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl bg-gray-100 p-2">
+                        <p className="text-xs font-semibold text-gray-500">
+                          Optimizada
+                        </p>
+                        <img
+                          src={cloudinaryVariants.optimized}
+                          alt="Version optimizada"
+                          className="mt-2 h-24 w-full object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="rounded-xl bg-gray-100 p-2">
+                        <p className="text-xs font-semibold text-gray-500">
+                          Recorte automatico
+                        </p>
+                        <img
+                          src={cloudinaryVariants.cropped}
+                          alt="Version recortada"
+                          className="mt-2 h-24 w-full object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {formMessage && (
-                <p className="text-sm text-emerald-600 md:col-span-2">
+                <p
+                  className={`text-sm md:col-span-2 ${
+                    formHasError ? 'text-red-500' : 'text-emerald-600'
+                  }`}
+                >
                   {formMessage}
                 </p>
               )}
@@ -256,10 +405,10 @@ export default function StoreGrid() {
               <div className="flex justify-end md:col-span-2">
                 <button
                   type="submit"
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || isSubmitting}
                   className="rounded-full bg-[#0ACEE5] px-6 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-gray-300"
                 >
-                  Agregar local
+                  {isSubmitting ? 'Guardando...' : 'Agregar local'}
                 </button>
               </div>
             </form>
@@ -276,45 +425,59 @@ export default function StoreGrid() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="store-overlay-title"
-            className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl"
+            className="relative mx-auto flex h-full w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-2xl sm:my-6 sm:h-[calc(100vh-4rem)]"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="space-y-5">
-              <div className="relative h-40 w-full overflow-hidden rounded-2xl bg-gray-100">
-                <img
-                  src={selectedStore.fotoUrl || defaultLogo}
-                  alt={`Logo de ${selectedStore.nombreLocal}`}
-                  className="h-full w-full object-contain p-6"
-                  loading="lazy"
-                />
+            <div className="relative h-52 w-full overflow-hidden bg-gradient-to-br from-white via-gray-50 to-slate-100 sm:h-64">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+              <div className="relative z-10 flex h-full items-center justify-center">
+                <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-[#0ACEE5] bg-white shadow-2xl sm:h-40 sm:w-40">
+                  <img
+                    src={selectedStore.fotoUrl || defaultLogo}
+                    alt={`Logo de ${selectedStore.nombreLocal}`}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+              <div className="absolute left-5 top-5 z-10 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
+                  {selectedStore.categoria || 'Comercio'}
+                </span>
+                <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
+                  Local {selectedStore.numeroLocal}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedStore(null)}
+                className="absolute right-5 top-5 z-10 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm transition hover:bg-white"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+              <div>
+                <h3
+                  id="store-overlay-title"
+                  className="text-2xl font-semibold text-gray-900"
+                >
+                  {selectedStore.nombreLocal}
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  {selectedStore.actividad}
+                </p>
               </div>
 
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase text-gray-500">
-                    Local {selectedStore.numeroLocal}
-                  </p>
-                  <h3
-                    id="store-overlay-title"
-                    className="text-2xl font-semibold text-gray-900"
-                  >
-                    {selectedStore.nombreLocal}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {selectedStore.actividad}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl bg-gray-50 p-4">
+                  <p className="text-xs font-semibold text-gray-500">Categoria</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {selectedStore.categoria || 'Comercio'}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedStore(null)}
-                  className="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 hover:bg-gray-100"
-                >
-                  Cerrar
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <div className="rounded-xl bg-gray-50 p-4">
+                <div className="rounded-2xl bg-gray-50 p-4">
                   <p className="text-xs font-semibold text-gray-500">Ubicacion</p>
                   <p className="text-sm text-gray-800">
                     Planta: {selectedStore.planta}
@@ -323,14 +486,24 @@ export default function StoreGrid() {
                     Local: {selectedStore.numeroLocal}
                   </p>
                 </div>
-
-                <div className="rounded-xl bg-gray-50 p-4">
-                  <p className="text-xs font-semibold text-gray-500">Actividad</p>
-                  <p className="text-sm text-gray-700">
-                    {selectedStore.actividad}
-                  </p>
-                </div>
               </div>
+
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <p className="text-xs font-semibold text-gray-500">Resumen</p>
+                <p className="text-sm text-gray-700">
+                  {selectedStore.actividad}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
+              <button
+                type="button"
+                onClick={() => setSelectedStore(null)}
+                className="w-full rounded-full bg-[#0ACEE5] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#08b7cc]"
+              >
+                Listo
+              </button>
             </div>
           </div>
         </div>
