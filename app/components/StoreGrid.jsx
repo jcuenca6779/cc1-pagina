@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createLocal, resolveFotoUrl } from '../../api/locales'
 import { isCloudinaryEnabled, uploadToCloudinary } from '../../api/cloudinary'
+import { CATEGORIES, resolveCategory } from '../data/categories'
 
 const defaultLogo = '/assets/images/logocompleto.png'
-const fallbackCategories = ['Comercio', 'Moda', 'Tecnologia', 'Servicios', 'Gastronomia']
+const fallbackCategories = CATEGORIES
 
 export default function StoreGrid({
   stores = [],
@@ -21,7 +22,7 @@ export default function StoreGrid({
     actividad: '',
     numero_local: '',
     planta: '',
-    categoria: categories[0] || fallbackCategories[0],
+    categoria: categories[0]?.label || fallbackCategories[0]?.label || '',
     fotoFile: null,
   })
   const [formMessage, setFormMessage] = useState('')
@@ -49,10 +50,10 @@ export default function StoreGrid({
     formData.categoria.trim()
 
   useEffect(() => {
-    if (!formCategories.includes(formData.categoria)) {
+    if (!formData.categoria.trim() && formCategories.length > 0) {
       setFormData((prev) => ({
         ...prev,
-        categoria: formCategories[0] || fallbackCategories[0],
+        categoria: formCategories[0]?.label || fallbackCategories[0]?.label || '',
       }))
     }
   }, [formCategories, formData.categoria])
@@ -138,11 +139,13 @@ export default function StoreGrid({
     setIsSubmitting(true)
 
     try {
+      const resolvedCategory = resolveCategory(formData.categoria)
       const created = await createLocal({
         nombre_local: formData.nombre_local.trim(),
         actividad: formData.actividad.trim(),
         numero_local: formData.numero_local.trim(),
         planta: formData.planta.trim(),
+        categoria: resolvedCategory.label,
         fotoFile: formData.fotoFile,
       })
 
@@ -154,7 +157,8 @@ export default function StoreGrid({
         planta: created.planta,
         foto: created.foto,
         fotoUrl: cloudinaryUrl || resolveFotoUrl(created.foto),
-        categoria: formData.categoria,
+        categoriaId: resolvedCategory.id,
+        categoria: resolvedCategory.label,
       }
 
       onLocalCreated(mapped)
@@ -165,7 +169,7 @@ export default function StoreGrid({
         actividad: '',
         numero_local: '',
         planta: '',
-        categoria: formCategories[0] || fallbackCategories[0],
+        categoria: formCategories[0]?.label || fallbackCategories[0]?.label || '',
         fotoFile: null,
       })
       setCloudinaryUrl('')
@@ -219,7 +223,7 @@ export default function StoreGrid({
                   )}
                 </div>
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-[#1d1d99]">
-                  {store.categoria || 'Comercio'}
+                  {resolveCategory(store.categoria || store.categoriaId).label}
                 </span>
                 <span className="text-xs font-semibold text-gray-500">
                   Local {store.numeroLocal}
@@ -281,11 +285,12 @@ export default function StoreGrid({
                   name="categoria"
                   value={formData.categoria}
                   onChange={handleChange}
-                  className="category-select mt-2"
+                  className="search-input mt-2"
+                  required
                 >
                   {formCategories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
+                    <option key={cat.id} value={cat.label}>
+                      {cat.label}
                     </option>
                   ))}
                 </select>
@@ -442,7 +447,7 @@ export default function StoreGrid({
               </div>
               <div className="absolute left-5 top-5 z-10 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
-                  {selectedStore.categoria || 'Comercio'}
+                  {resolveCategory(selectedStore.categoria || selectedStore.categoriaId).label}
                 </span>
                 <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm">
                   Local {selectedStore.numeroLocal}
@@ -474,7 +479,7 @@ export default function StoreGrid({
                 <div className="rounded-2xl bg-gray-50 p-4">
                   <p className="text-xs font-semibold text-gray-500">Categoria</p>
                   <p className="text-sm font-semibold text-gray-900">
-                    {selectedStore.categoria || 'Comercio'}
+                    {resolveCategory(selectedStore.categoria || selectedStore.categoriaId).label}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-gray-50 p-4">

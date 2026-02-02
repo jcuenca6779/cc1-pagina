@@ -4,7 +4,7 @@ import { Search, ChevronDown } from 'lucide-react'
 
 export default function DirectoryFilters({
   categories = [],
-  selectedCategory = 'Todas las categorias',
+  selectedCategoryId = 'all',
   onCategoryChange = () => {},
   selectedLetter = null,
   onLetterChange = () => {},
@@ -41,13 +41,13 @@ export default function DirectoryFilters({
           {/* Dropdown de categorias */}
           <div className="relative md:w-64">
             <select
-              value={selectedCategory}
+              value={selectedCategoryId}
               onChange={(event) => onCategoryChange(event.target.value)}
               className="category-select"
             >
               {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
+                <option key={cat.id} value={cat.id}>
+                  {cat.label}
                 </option>
               ))}
             </select>

@@ -1,5 +1,5 @@
 export const API_URL = (
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+  process.env.NEXT_PUBLIC_API_URL || 'https://backend-cc1.onrender.com'
 ).replace(/\/$/, '')
 
 export type LocalRecord = {
@@ -9,6 +9,7 @@ export type LocalRecord = {
   numero_local: string
   planta: string
   foto: string | null
+  categoria?: string | null
 }
 
 export type LocalCreateInput = {
@@ -17,6 +18,7 @@ export type LocalCreateInput = {
   numero_local: string
   planta: string
   fotoFile?: File | null
+  categoria?: string
 }
 
 export type LocalUpdateInput = {
@@ -24,6 +26,7 @@ export type LocalUpdateInput = {
   actividad: string
   numero_local: string
   planta: string
+  categoria?: string
 }
 
 export const resolveFotoUrl = (foto?: string | null): string | null => {
@@ -61,6 +64,10 @@ export const createLocal = async (
   formData.append('actividad', payload.actividad)
   formData.append('numero_local', payload.numero_local)
   formData.append('planta', payload.planta)
+
+  if (payload.categoria) {
+    formData.append('categoria', payload.categoria)
+  }
 
   if (payload.fotoFile) {
     formData.append('foto', payload.fotoFile)
