@@ -9,7 +9,7 @@ export default function Navbar() {
   const menuItems = [
     { name: 'Inicio', href: '/' },
     { name: 'Locales', href: '/locales' },
-    { name: 'Contactenos', href: '/contacto' },
+    { name: 'Contáctenos', href: '/contacto' },
   ]
 
   const isActiveRoute = (href) => {
