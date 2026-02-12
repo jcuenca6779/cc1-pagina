@@ -176,6 +176,12 @@ export default function LocalesClient({ initialApiLocales = null, initialError =
     setStores((prev) => [newStore, ...prev])
   }
 
+  const handleLocalUpdated = (updatedStore) => {
+    setStores((prev) =>
+      prev.map((s) => (s.id === updatedStore.id ? { ...s, ...updatedStore } : s))
+    )
+  }
+
   const hasFilters =
     Boolean(searchTerm.trim()) ||
     Boolean(selectedLetter) ||
@@ -184,6 +190,15 @@ export default function LocalesClient({ initialApiLocales = null, initialError =
   const emptyMessage = hasFilters
     ? 'No hay locales con los filtros seleccionados.'
     : 'No hay locales registrados.'
+
+  const defaultLogo = '/assets/images/logocompleto.png'
+  const getStoreImageUrl = (store) => {
+    if (!store) return defaultLogo
+    const url = store.fotoUrl || store.foto
+    if (!url) return defaultLogo
+    if (url.startsWith('http')) return url
+    return store.fotoUrl || defaultLogo
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -203,7 +218,54 @@ export default function LocalesClient({ initialApiLocales = null, initialError =
         emptyMessage={emptyMessage}
         categories={categories}
         onLocalCreated={handleLocalCreated}
+        onLocalUpdated={handleLocalUpdated}
       />
+
+      {/* Sección: ver todas las fotos subidas al backend */}
+      {stores.length > 0 && (
+        <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8 bg-white border-t border-gray-100">
+          <h2 className="mb-4 text-xl font-bold text-gray-800">Fotos subidas al backend</h2>
+          <p className="mb-6 text-sm text-gray-500">
+            Todas las imágenes que devuelve el backend para cada local. Haz clic en una para abrir la URL en una pestaña nueva.
+          </p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {stores.map((store) => {
+              const imgUrl = getStoreImageUrl(store)
+              const hasPhoto = imgUrl && imgUrl !== defaultLogo
+              return (
+                <a
+                  key={store.id}
+                  href={hasPhoto ? imgUrl : undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`flex flex-col rounded-xl border bg-gray-50 overflow-hidden transition hover:shadow-md ${!hasPhoto ? 'pointer-events-none opacity-75' : ''}`}
+                >
+                  <div className="aspect-square bg-gray-200 flex items-center justify-center">
+                    <img
+                      src={imgUrl}
+                      alt={store.nombreLocal || 'Local'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = defaultLogo
+                        e.currentTarget.onerror = null
+                      }}
+                    />
+                  </div>
+                  <div className="p-2 text-center">
+                    <p className="text-xs font-medium text-gray-700 truncate">{store.nombreLocal || 'Sin nombre'}</p>
+                    <p className="text-[10px] text-gray-400">Local {store.numeroLocal}</p>
+                    {hasPhoto && (
+                      <p className="text-[10px] text-cyan-600 truncate mt-1" title={imgUrl}>
+                        Ver URL
+                      </p>
+                    )}
+                  </div>
+                </a>
+              )
+            })}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

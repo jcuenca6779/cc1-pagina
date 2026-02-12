@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { createLocal } from '../../api/locales'
-// Asegúrate de que la ruta sea correcta
+import { createLocal, updateLocal, updateLocalFoto, resolveFotoUrl } from '../../api/locales'
 import { uploadToImgBB } from '../api/imgbb'
 import { CATEGORIES, resolveCategory } from '../data/categories'
 
@@ -16,8 +15,23 @@ export default function StoreGrid({
   emptyMessage = 'No hay locales registrados.',
   categories = [],
   onLocalCreated = () => { },
+  onLocalUpdated = () => { },
 } = {}) {
   const [selectedStore, setSelectedStore] = useState(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editFormData, setEditFormData] = useState({
+    nombre_local: '',
+    actividad: '',
+    numero_local: '',
+    planta: '',
+    categoria: '',
+  })
+  const [editFotoFile, setEditFotoFile] = useState(null)
+  const [editUploadedUrl, setEditUploadedUrl] = useState('')
+  const [isUploadingEditPhoto, setIsUploadingEditPhoto] = useState(false)
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false)
+  const [editMessage, setEditMessage] = useState('')
+  const [editHasError, setEditHasError] = useState(false)
 
   const [formData, setFormData] = useState({
     nombre_local: '',
@@ -61,27 +75,41 @@ export default function StoreGrid({
   useEffect(() => {
     if (!selectedStore) return
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setSelectedStore(null)
+      if (event.key === 'Escape') {
+        if (isEditing) setIsEditing(false)
+        else setSelectedStore(null)
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedStore])
+  }, [selectedStore, isEditing])
+
+  // Al abrir edición, rellenar formulario con los datos del local
+  useEffect(() => {
+    if (selectedStore && isEditing) {
+      setEditFormData({
+        nombre_local: selectedStore.nombreLocal || '',
+        actividad: selectedStore.actividad || '',
+        numero_local: selectedStore.numeroLocal || '',
+        planta: selectedStore.planta || '',
+        categoria: selectedStore.categoria || formCategories[0]?.label || '',
+      })
+      setEditFotoFile(null)
+      setEditUploadedUrl('')
+      setEditMessage('')
+      setEditHasError(false)
+    }
+  }, [selectedStore?.id, isEditing])
 
   // --- FUNCIÓN PARA OBTENER LA IMAGEN ---
+  // Prioriza fotoUrl (URL completa del backend o ImgBB) y luego foto (puede ser URL externa)
   const getStoreImageUrl = (store) => {
     if (!store) return defaultLogo;
-
-    // Priorizamos la URL que viene del backend (foto) o la del frontend (fotoUrl)
-    const rawPhoto = store.foto || store.fotoUrl;
-
-    if (!rawPhoto) return defaultLogo;
-
-    // Si es un link web válido (ImgBB, etc.), lo usamos.
-    if (rawPhoto.startsWith('http') || rawPhoto.startsWith('https')) {
-      return rawPhoto;
-    }
-
-    // Si no es un link http, asumimos que es inválido o viejo y devolvemos el logo
+    const url = store.fotoUrl || store.foto;
+    if (!url) return defaultLogo;
+    if (url.startsWith('http') || url.startsWith('https')) return url;
+    // Si el backend devuelve path relativo, fotoUrl ya debería ser la URL completa
+    if (store.fotoUrl) return store.fotoUrl;
     return defaultLogo;
   }
 
@@ -164,6 +192,76 @@ export default function StoreGrid({
     }
   }
 
+  const handleEditChange = (event) => {
+    const { name, value } = event.target
+    setEditFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleEditFileChange = async (event) => {
+    const file = event.target.files?.[0] || null
+    setEditFotoFile(file)
+    setEditUploadedUrl('')
+    if (!file) return
+    setIsUploadingEditPhoto(true)
+    try {
+      const url = await uploadToImgBB(file)
+      setEditUploadedUrl(url)
+    } catch {
+      setEditMessage('Error al subir la imagen.')
+      setEditHasError(true)
+    } finally {
+      setIsUploadingEditPhoto(false)
+    }
+  }
+
+  const handleSaveEdit = async (event) => {
+    event.preventDefault()
+    if (!selectedStore || isSubmittingEdit) return
+    setEditMessage('')
+    setEditHasError(false)
+    setIsSubmittingEdit(true)
+    try {
+      const resolvedCategory = resolveCategory(editFormData.categoria)
+      await updateLocal(selectedStore.id, {
+        nombre_local: editFormData.nombre_local.trim(),
+        actividad: editFormData.actividad.trim(),
+        numero_local: editFormData.numero_local.trim(),
+        planta: editFormData.planta.trim(),
+        categoria: resolvedCategory.label,
+      })
+      let newFoto = selectedStore.foto || selectedStore.fotoUrl
+      if (editFotoFile) {
+        try {
+          const res = await updateLocalFoto(selectedStore.id, editFotoFile)
+          newFoto = res.foto?.startsWith('http') ? res.foto : (resolveFotoUrl(res.foto) || res.foto)
+        } catch {
+          setEditMessage('Local actualizado, pero falló la foto.')
+          setEditHasError(true)
+        }
+      }
+      const updatedStore = {
+        ...selectedStore,
+        nombreLocal: editFormData.nombre_local.trim(),
+        actividad: editFormData.actividad.trim(),
+        numeroLocal: editFormData.numero_local.trim(),
+        planta: editFormData.planta.trim(),
+        categoria: resolvedCategory.label,
+        categoriaId: resolvedCategory.id,
+        foto: newFoto,
+        fotoUrl: newFoto?.startsWith('http') ? newFoto : (resolveFotoUrl(newFoto) || newFoto),
+      }
+      onLocalUpdated(updatedStore)
+      setSelectedStore(updatedStore)
+      setIsEditing(false)
+      setEditMessage('Cambios guardados.')
+    } catch (error) {
+      setEditMessage('Error al actualizar el local.')
+      setEditHasError(true)
+    } finally {
+      setIsSubmittingEdit(false)
+    }
+  }
+
   return (
     <div id="locales" className="py-8 bg-gray-50">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -179,12 +277,12 @@ export default function StoreGrid({
               onClick={() => setSelectedStore(store)}
               className="text-left transition-transform store-card aspect-square focus:outline-none hover:scale-105"
             >
-              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-3 overflow-hidden bg-gray-200 rounded-full">
+              {/* Imagen circular en la tarjeta (antes de abrir el pop-up) */}
+              <div className="flex items-center justify-center w-24 h-24 mx-auto mb-3 overflow-hidden bg-gray-200 rounded-full shrink-0">
                 <img
                   src={getStoreImageUrl(store)}
                   alt={store.nombreLocal || 'Local'}
                   className="object-cover w-full h-full"
-                  // QUITAMOS EL STYLE QUE DABA ERROR DE ASPECT RATIO
                   crossOrigin="anonymous"
                   loading="lazy"
                   onError={(e) => {
@@ -268,66 +366,103 @@ export default function StoreGrid({
             className="relative w-full max-w-xl mx-auto overflow-hidden transition-all transform bg-white shadow-2xl rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
-<div className="relative w-full overflow-hidden h-80 sm:h-96">
-  {/* FOTO DE FONDO */}
-  <img
-    src={getStoreImageUrl(selectedStore)}
-    alt={selectedStore.nombreLocal}
-    className="absolute inset-0 object-cover object-top w-full h-full"
-    loading="lazy"
-    onError={(e) => {
-      e.currentTarget.src = defaultLogo
-      e.currentTarget.onerror = null
-    }}
-  />
+{/* En el pop-up la imagen ocupa todo el espacio (rectangular, sin círculo) */}
+            <div className="relative w-full overflow-hidden h-80 sm:h-96 rounded-t-3xl">
+              <img
+                src={getStoreImageUrl(selectedStore)}
+                alt={selectedStore.nombreLocal}
+                className="absolute inset-0 w-full h-full object-cover object-center rounded-none"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = defaultLogo
+                  e.currentTarget.onerror = null
+                }}
+              />
 
-  {/* DEGRADADO ENCIMA */}
-  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+              {/* DEGRADADO ENCIMA */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
 
-  {/* CHIPS ARRIBA A LA IZQUIERDA (opcional, pero queda pro) */}
-  <div className="absolute z-10 flex gap-2 left-4 top-4">
-    <span className="px-3 py-1 text-xs font-semibold text-gray-700 rounded-full shadow-sm bg-white/90">
-      {selectedStore.categoria}
-    </span>
-    <span className="px-3 py-1 text-xs font-semibold text-gray-700 rounded-full shadow-sm bg-white/90">
-      Local {selectedStore.numeroLocal}
-    </span>
-  </div>
+              {/* CHIPS ARRIBA A LA IZQUIERDA */}
+              <div className="absolute z-10 flex gap-2 left-4 top-4">
+                <span className="px-3 py-1 text-xs font-semibold text-gray-700 rounded-full shadow-sm bg-white/90">
+                  {selectedStore.categoria}
+                </span>
+                <span className="px-3 py-1 text-xs font-semibold text-gray-700 rounded-full shadow-sm bg-white/90">
+                  Local {selectedStore.numeroLocal}
+                </span>
+              </div>
 
-  {/* BOTÓN CERRAR */}
-  <button
-    onClick={() => setSelectedStore(null)}
-    className="absolute z-10 px-3 py-1 text-xs font-semibold text-gray-700 transition rounded-full shadow-sm right-4 top-4 bg-white/90 hover:bg-white"
-  >
-    Cerrar
-  </button>
-</div>
+              {/* BOTÓN CERRAR */}
+              <button
+                onClick={() => setSelectedStore(null)}
+                className="absolute z-10 px-3 py-1 text-xs font-semibold text-gray-700 transition rounded-full shadow-sm right-4 top-4 bg-white/90 hover:bg-white"
+              >
+                Cerrar
+              </button>
+            </div>
 
 
             <div className="p-6 space-y-4">
-              <div className="text-center sm:text-left">
-                <h3 className="text-2xl font-bold text-gray-900">{selectedStore.nombreLocal}</h3>
-                <p className="text-lg text-gray-600">{selectedStore.actividad}</p>
-              </div>
+              {!isEditing ? (
+                <>
+                  <div className="text-center sm:text-left">
+                    <h3 className="text-2xl font-bold text-gray-900">{selectedStore.nombreLocal}</h3>
+                    <p className="text-lg text-gray-600">{selectedStore.actividad}</p>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
-                  <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">Ubicación</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-800">Local {selectedStore.numeroLocal}</p>
-                  <p className="text-xs text-gray-500">{selectedStore.planta}</p>
-                </div>
-                <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
-                  <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">Categoría</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-800">{selectedStore.categoria}</p>
-                </div>
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
+                      <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">Ubicación</p>
+                      <p className="mt-1 text-sm font-semibold text-gray-800">Local {selectedStore.numeroLocal}</p>
+                      <p className="text-xs text-gray-500">{selectedStore.planta}</p>
+                    </div>
+                    <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
+                      <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">Categoría</p>
+                      <p className="mt-1 text-sm font-semibold text-gray-800">{selectedStore.categoria}</p>
+                    </div>
+                  </div>
 
-              <button
-                onClick={() => setSelectedStore(null)}
-                className="w-full rounded-full bg-[#0ACEE5] py-3 font-bold text-white hover:bg-[#09bccf] transition-colors shadow-lg shadow-cyan-500/30"
-              >
-                Listo
-              </button>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(true)}
+                      className="flex-1 rounded-full border-2 border-[#0ACEE5] py-3 font-bold text-[#0ACEE5] hover:bg-[#0ACEE5] hover:text-white transition-colors"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => setSelectedStore(null)}
+                      className="flex-1 rounded-full bg-[#0ACEE5] py-3 font-bold text-white hover:bg-[#09bccf] transition-colors shadow-lg shadow-cyan-500/30"
+                    >
+                      Listo
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-bold text-gray-900">Editar local</h3>
+                  <form onSubmit={handleSaveEdit} className="space-y-3">
+                    <input name="nombre_local" value={editFormData.nombre_local} onChange={handleEditChange} placeholder="Nombre comercial" className="search-input" required />
+                    <input name="actividad" value={editFormData.actividad} onChange={handleEditChange} placeholder="Actividad" className="search-input" required />
+                    <select name="categoria" value={editFormData.categoria} onChange={handleEditChange} className="search-input">
+                      {formCategories.map((cat) => <option key={cat.id} value={cat.label}>{cat.label}</option>)}
+                    </select>
+                    <input name="numero_local" value={editFormData.numero_local} onChange={handleEditChange} placeholder="Número local" className="search-input" required />
+                    <input name="planta" value={editFormData.planta} onChange={handleEditChange} placeholder="Planta" className="search-input" required />
+                    <div>
+                      <label className="block mb-1 text-sm font-medium text-gray-700">Cambiar foto (opcional)</label>
+                      <input type="file" accept="image/*" onChange={handleEditFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700" />
+                    </div>
+                    {isUploadingEditPhoto && <p className="text-xs text-blue-600">Subiendo imagen...</p>}
+                    {(editUploadedUrl || editFotoFile) && !isUploadingEditPhoto && <p className="text-xs text-green-600">Nueva foto lista</p>}
+                    {editMessage && <p className={`text-sm ${editHasError ? 'text-red-500' : 'text-green-600'}`}>{editMessage}</p>}
+                    <div className="flex gap-3 pt-2">
+                      <button type="button" onClick={() => setIsEditing(false)} className="flex-1 rounded-full border border-gray-300 py-2 font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
+                      <button type="submit" disabled={isSubmittingEdit || isUploadingEditPhoto} className="flex-1 rounded-full bg-[#0ACEE5] py-2 font-bold text-white hover:bg-[#09bccf] disabled:opacity-50">Guardar</button>
+                    </div>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         </div>
