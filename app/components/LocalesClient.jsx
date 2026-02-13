@@ -78,14 +78,14 @@ const mapApiItem = (item) => {
   }
 }
 
-export default function LocalesClient({ initialApiLocales = null, initialError = '' } = {}) {
+export default function LocalesClient({ initialApiLocales = null, initialError = '', initialSearchTerm = '' } = {}) {
   const hasInitial = Array.isArray(initialApiLocales)
   const [stores, setStores] = useState(() =>
     hasInitial ? initialApiLocales.map(mapApiItem) : []
   )
   const [isLoading, setIsLoading] = useState(!hasInitial)
   const [loadError, setLoadError] = useState(initialError)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm)
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     ALL_CATEGORIES_OPTION.id
   )
