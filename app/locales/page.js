@@ -1,3 +1,5 @@
+// src/app/locales/page.js
+
 import LocalesClient from '../components/LocalesClient'
 import { getLocales } from '../../api/locales'
 

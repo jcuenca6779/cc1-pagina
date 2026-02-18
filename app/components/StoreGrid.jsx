@@ -1,3 +1,5 @@
+// app/components/StoreGrid.jsx
+
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
