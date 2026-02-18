@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createLocal } from '../../api/locales' 
 // Asegúrate de que la ruta sea correcta
 import { uploadToImgBB } from '../api/imgbb' 
@@ -34,7 +34,7 @@ export default function StoreGrid({
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   
   const [uploadedUrl, setUploadedUrl] = useState('')
-
+  const imgURL = useRef('')
   const isDevEnv = process.env.NODE_ENV !== 'production'
   
   const formCategories = useMemo(
@@ -73,7 +73,7 @@ export default function StoreGrid({
 
     // Priorizamos la URL que viene del backend (foto) o la del frontend (fotoUrl)
     const rawPhoto = store.foto || store.fotoUrl;
-
+    console.log('Obteniendo imagen para store:', store.nombreLocal, 'Foto raw:', rawPhoto);
     if (!rawPhoto) return defaultLogo;
 
     // Si es un link web válido (ImgBB, etc.), lo usamos.
@@ -94,6 +94,7 @@ export default function StoreGrid({
     const file = event.target.files?.[0] || null
     setFormData((prev) => ({ ...prev, fotoFile: file }))
     setUploadedUrl('') 
+    imgURL.current = ''
 
     if (!file) return
 
@@ -101,12 +102,14 @@ export default function StoreGrid({
     try {
       const url = await uploadToImgBB(file)
       console.log('Imagen subida a ImgBB:', url)
+      imgURL.current = url
       setUploadedUrl(url)
     } catch (error) {
       setFormMessage('Error al subir a ImgBB.')
       setFormHasError(true)
     } finally {
       setIsUploadingImage(false)
+      
     }
   }
 
@@ -121,6 +124,7 @@ export default function StoreGrid({
 
     try {
       const resolvedCategory = resolveCategory(formData.categoria)
+      console.log('Categoría resuelta:', imgURL.current, resolvedCategory)
       
       // Enviamos la URL al backend
       const created = await createLocal({
@@ -129,7 +133,7 @@ export default function StoreGrid({
         numero_local: formData.numero_local.trim(),
         planta: formData.planta.trim(),
         categoria: resolvedCategory.label,
-        foto: uploadedUrl || '', // ENVIAMOS LA URL DE IMGBB
+        foto: imgURL.current || '', // ENVIAMOS LA URL DE IMGBB
       })
 
       const mapped = {

@@ -19,6 +19,7 @@ export type LocalCreateInput = {
   planta: string
   fotoFile?: File | null
   categoria?: string
+  foto: string
 }
 
 export type LocalUpdateInput = {
@@ -64,15 +65,15 @@ export const createLocal = async (
   formData.append('actividad', payload.actividad)
   formData.append('numero_local', payload.numero_local)
   formData.append('planta', payload.planta)
+  formData.append('foto', payload.foto)
+
+  console.log('Payload en createLocal:', payload)
 
   if (payload.categoria) {
     formData.append('categoria', payload.categoria)
   }
 
-  if (payload.fotoFile) {
-    formData.append('foto', payload.fotoFile)
-  }
-
+  console.log(formData.get('foto'))
   const response = await fetch(`${API_URL}/locales`, {
     method: 'POST',
     body: formData,
