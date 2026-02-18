@@ -6,9 +6,10 @@ export const metadata = {
   description: 'Directorio de locales comerciales y emprendimientos.',
 }
 
-export default async function LocalesPage() {
+export default async function LocalesPage({ searchParams }) {
   let initialLocales = null
   let initialError = ''
+  const initialSearchTerm = typeof searchParams?.q === 'string' ? searchParams.q : ''
 
   try {
     initialLocales = await getLocales()
@@ -17,6 +18,10 @@ export default async function LocalesPage() {
   }
 
   return (
-    <LocalesClient initialApiLocales={initialLocales} initialError={initialError} />
+    <LocalesClient
+      initialApiLocales={initialLocales}
+      initialError={initialError}
+      initialSearchTerm={initialSearchTerm}
+    />
   )
 }
