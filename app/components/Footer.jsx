@@ -1,28 +1,28 @@
-'use client'
+"use client";
 
-import Image from 'next/image'
-import Link from 'next/link'
-import { Facebook, Instagram, Mail, MapPin, Clock } from 'lucide-react'
-import { useState } from 'react'
+import Image from "next/image";
+import Link from "next/link";
+import { Facebook, Instagram, Mail, MapPin, Clock } from "lucide-react";
+import { useState } from "react";
 
 const SOCIAL = [
-  { name: 'Facebook', href: '#', icon: Facebook },
-  { name: 'Instagram', href: '#', icon: Instagram },
-]
+  { name: "Facebook", href: "#", icon: Facebook },
+  { name: "Instagram", href: "#", icon: Instagram },
+];
 
 const NOSOTROS_LINKS = [
-  { label: 'Quiénes somos', href: '/' },
-  { label: 'Transparencia', href: '/' },
-  { label: 'Contacto', href: '/contacto' },
-]
+  { label: "Quiénes somos", href: "/" },
+  { label: "Transparencia", href: "/" },
+  { label: "Contacto", href: "/contacto" },
+];
 
 export default function Footer() {
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState("");
 
   const handleSubscribe = (e) => {
-    e.preventDefault()
-    if (email.trim()) setEmail('')
-  }
+    e.preventDefault();
+    if (email.trim()) setEmail("");
+  };
 
   return (
     <footer className="bg-[#1d1d99] text-white">
@@ -70,11 +70,16 @@ export default function Footer() {
         {/* Columnas: Nosotros, Horarios, Contáctanos */}
         <div className="grid gap-8 py-10 md:grid-cols-3">
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider text-white/90">Nosotros</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white/90">
+              Nosotros
+            </h3>
             <ul className="mt-4 space-y-2">
               {NOSOTROS_LINKS.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="text-sm text-white/80 hover:text-white hover:underline">
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/80 hover:text-white hover:underline"
+                  >
                     {link.label} →
                   </Link>
                 </li>
@@ -86,18 +91,19 @@ export default function Footer() {
               <Clock size={16} /> Horarios de atención
             </h3>
             <ul className="mt-4 space-y-1 text-sm text-white/80">
-              <li>Centro Comercial: Lun-Sáb 10h00-21h00</li>
-              <li>Domingo: 10h00-20h00</li>
+              <li>Lun-Sáb 09:00-19:00</li>
+              <li>Domingo: 09:00-13:00</li>
             </ul>
           </div>
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-white/90 flex items-center gap-2">
               <MapPin size={16} /> Visítanos
             </h3>
-            <p className="mt-4 text-sm text-white/80">
-              Portoviejo, Manabí
-            </p>
-            <Link href="/contacto" className="mt-2 inline-block text-sm text-[#0ACEE5] hover:underline">
+            <p className="mt-4 text-sm text-white/80">Portoviejo, Manabí</p>
+            <Link
+              href="/contacto"
+              className="mt-2 inline-block text-sm text-[#0ACEE5] hover:underline"
+            >
               Ver mapa →
             </Link>
           </div>
@@ -141,5 +147,5 @@ export default function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }

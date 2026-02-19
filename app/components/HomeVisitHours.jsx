@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import Image from 'next/image'
-import { Clock, MapPin } from 'lucide-react'
+import Link from "next/link";
+import Image from "next/image";
+import { Clock, MapPin } from "lucide-react";
 
 export default function HomeVisitHours() {
   return (
@@ -36,15 +36,19 @@ export default function HomeVisitHours() {
             <div className="flex items-center justify-center w-20 h-20 rounded-full bg-white/20 mb-4">
               <Clock size={40} />
             </div>
-            <span className="text-lg font-bold uppercase tracking-wide">Horarios</span>
+            <span className="text-lg font-bold uppercase tracking-wide">
+              Horarios de atención
+            </span>
+
             <div className="mt-4 space-y-3 text-center text-sm">
               <div className="px-4 py-2 rounded-lg bg-white/10">
                 <p className="font-semibold">Lunes a sábado</p>
-                <p>10h00 - 21h00</p>
+                <p>09:00 - 19:00</p>
               </div>
+
               <div className="px-4 py-2 rounded-lg bg-white/10">
                 <p className="font-semibold">Domingo</p>
-                <p>10h00 - 20h00</p>
+                <p>09:00 - 13:00</p>
               </div>
             </div>
           </div>
@@ -55,7 +59,8 @@ export default function HomeVisitHours() {
             </div>
             <span className="text-lg font-bold">Visítanos</span>
             <p className="mt-3 text-sm text-center text-gray-600">
-              Portoviejo, Manabí
+              Calle 10 de Agosto, entre Francisco Pacheco y García Moreno,
+              Portoviejo, Ecuador
             </p>
             <Link
               href="/contacto"
@@ -67,5 +72,5 @@ export default function HomeVisitHours() {
         </div>
       </section>
     </>
-  )
+  );
 }

@@ -10,8 +10,7 @@ export default function ContactoPage() {
     <div className="flex flex-col min-h-screen">
       <main className="flex-1 bg-gray-50">
         <section className="px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-
-  {/* Ubicación */}
+          {/* Ubicación */}
           <div className="mt-4">
             <h2 className="text-3xl font-bold text-center text-gray-900">
               Siempre cerca de ti
@@ -49,11 +48,12 @@ export default function ContactoPage() {
                   <span className="font-semibold text-gray-900">
                     Dirección:
                   </span>{" "}
-                  Calle 10 de Agosto, entre Francisco Pacheco y García Moreno, Portoviejo
+                  Calle 10 de Agosto, entre Francisco Pacheco y García Moreno,
+                  Portoviejo
                 </p>
                 <p>
                   <span className="font-semibold text-gray-900">Teléfono:</span>{" "}
-(05) 370-0250
+                  (05) 370-0250
                 </p>
                 <p>
                   <span className="font-semibold text-gray-900">Correo:</span>{" "}
@@ -64,8 +64,6 @@ export default function ContactoPage() {
                   Lunes a viernes 08:00 - 17:00
                 </p>
               </div>
-
-            
             </div>
 
             {/* Escribenos */}
@@ -75,7 +73,7 @@ export default function ContactoPage() {
               </h2>
 
               <p className="mt-2 text-sm text-gray-600">
-Nos contactaremos contigo lo antes posible.
+                Nos contactaremos contigo lo antes posible.
               </p>
 
               <form className="grid gap-3 mt-4">
@@ -116,8 +114,6 @@ Nos contactaremos contigo lo antes posible.
               </form>
             </div>
           </div>
-
-        
         </section>
       </main>
 
