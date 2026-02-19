@@ -199,14 +199,14 @@ export default function StoreGrid({
                   }}
                 />
               </div>
-              <div className="px-2">
+              <div className="px-2 w-full min-w-0">
                 <span className="block text-[10px] font-semibold uppercase text-[#1d1d99]">
                   {store.categoria}
                 </span>
                 <span className="block text-xs font-semibold text-gray-500">
                   Local {store.numeroLocal}
                 </span>
-                <span className="block text-sm font-medium text-gray-700 truncate">
+                <span className="store-card-title block text-sm font-medium text-gray-700">
                   {store.nombreLocal}
                 </span>
               </div>
