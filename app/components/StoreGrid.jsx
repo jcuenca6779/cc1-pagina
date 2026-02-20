@@ -1,136 +1,153 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo, useState } from 'react'
-import { createLocal } from '../../api/locales'
-// Asegúrate de que la ruta sea correcta
-import { uploadToImgBB } from '../api/imgbb'
-import { CATEGORIES, resolveCategory } from '../data/categories'
+import { useEffect, useMemo, useState } from "react";
+import { createLocal } from "../../api/locales";
+import { uploadToImgBB } from "../api/imgbb";
+import { CATEGORIES, resolveCategory } from "../data/categories";
 
-const defaultLogo = '/assets/images/logocompleto.png'
-const fallbackCategories = CATEGORIES
+const defaultLogo = "/assets/images/logocompleto.png";
+const fallbackCategories = CATEGORIES;
 
 export default function StoreGrid({
   stores = [],
   isLoading = false,
-  loadError = '',
-  emptyMessage = 'No hay locales registrados.',
+  loadError = "",
+  emptyMessage = "No hay locales registrados.",
   categories = [],
-  onLocalCreated = () => { },
+  onLocalCreated = () => {},
 } = {}) {
-  const [selectedStore, setSelectedStore] = useState(null)
+  const [selectedStore, setSelectedStore] = useState(null);
 
   const [formData, setFormData] = useState({
-    nombre_local: '',
-    actividad: '',
-    numero_local: '',
-    planta: '',
-    categoria: categories[0]?.label || fallbackCategories[0]?.label || '',
+    nombre_local: "",
+    actividad: "",
+    numero_local: "",
+    planta: "",
+    categoria: categories[0]?.label || fallbackCategories[0]?.label || "",
     fotoFile: null,
-  })
+  });
 
-  const [formMessage, setFormMessage] = useState('')
-  const [formHasError, setFormHasError] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [formMessage, setFormMessage] = useState("");
+  const [formHasError, setFormHasError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const [uploadedUrl, setUploadedUrl] = useState('')
+  const [uploadedUrl, setUploadedUrl] = useState("");
 
-  const isDevEnv = process.env.NODE_ENV !== 'production'
+  const isDevEnv = process.env.NODE_ENV !== "production";
 
   const formCategories = useMemo(
     () => (categories.length > 0 ? categories : fallbackCategories),
     [categories]
-  )
+  );
 
   const isFormValid =
     formData.nombre_local.trim() &&
     formData.actividad.trim() &&
     formData.numero_local.trim() &&
     formData.planta.trim() &&
-    formData.categoria.trim()
+    formData.categoria.trim();
 
   useEffect(() => {
     if (!formData.categoria.trim() && formCategories.length > 0) {
       setFormData((prev) => ({
         ...prev,
-        categoria: formCategories[0]?.label || fallbackCategories[0]?.label || '',
-      }))
+        categoria:
+          formCategories[0]?.label || fallbackCategories[0]?.label || "",
+      }));
     }
-  }, [formCategories, formData.categoria])
+  }, [formCategories, formData.categoria]);
 
   useEffect(() => {
-    if (!selectedStore) return
+    if (!selectedStore) return;
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setSelectedStore(null)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedStore])
+      if (event.key === "Escape") setSelectedStore(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedStore]);
 
   // --- FUNCIÓN PARA OBTENER LA IMAGEN ---
   const getStoreImageUrl = (store) => {
     if (!store) return defaultLogo;
 
-    // Priorizamos la URL que viene del backend (foto) o la del frontend (fotoUrl)
     const rawPhoto = store.foto || store.fotoUrl;
-
     if (!rawPhoto) return defaultLogo;
 
-    // Si es un link web válido (ImgBB, etc.), lo usamos.
-    if (rawPhoto.startsWith('http') || rawPhoto.startsWith('https')) {
+    if (rawPhoto.startsWith("http") || rawPhoto.startsWith("https")) {
       return rawPhoto;
     }
 
-    // Si no es un link http, asumimos que es inválido o viejo y devolvemos el logo
     return defaultLogo;
-  }
+  };
+
+  // ORDEN DE LOCALES POR NÚMEROS
+  const sortedStores = useMemo(() => {
+    const toNumber = (val) => {
+      const digits =
+        String(val ?? "")
+          .match(/\d+/g)
+          ?.join("") || "";
+      return digits ? parseInt(digits, 10) : Number.POSITIVE_INFINITY;
+    };
+
+    return [...stores].sort((a, b) => {
+      const numA = toNumber(a?.numeroLocal);
+      const numB = toNumber(b?.numeroLocal);
+
+      if (numA !== numB) return numA - numB;
+
+      const plantaA = String(a?.planta ?? "");
+      const plantaB = String(b?.planta ?? "");
+      return plantaA.localeCompare(plantaB, "es", { sensitivity: "base" });
+    });
+  }, [stores]);
 
   const handleChange = (event) => {
-    const { name, value } = event.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleFileChange = async (event) => {
-    const file = event.target.files?.[0] || null
-    setFormData((prev) => ({ ...prev, fotoFile: file }))
-    setUploadedUrl('')
+    const file = event.target.files?.[0] || null;
+    setFormData((prev) => ({ ...prev, fotoFile: file }));
+    setUploadedUrl("");
 
-    if (!file) return
+    if (!file) return;
 
-    setIsUploadingImage(true)
+    setIsUploadingImage(true);
     try {
-      const url = await uploadToImgBB(file)
-      console.log('Imagen subida a ImgBB:', url)
-      setUploadedUrl(url)
+      const url = await uploadToImgBB(file);
+      console.log("Imagen subida a ImgBB:", url);
+      setUploadedUrl(url);
     } catch (error) {
-      setFormMessage('Error al subir a ImgBB.')
-      setFormHasError(true)
+      setFormMessage("Error al subir a ImgBB.");
+      setFormHasError(true);
     } finally {
-      setIsUploadingImage(false)
+      setIsUploadingImage(false);
     }
-  }
+  };
 
   const handleAddStore = async (event) => {
-    event.preventDefault()
-    setFormMessage('')
-    setFormHasError(false)
+    event.preventDefault();
+    setFormMessage("");
+    setFormHasError(false);
 
-    if (!isDevEnv || !isFormValid || isSubmitting) return
+    if (!isDevEnv || !isFormValid || isSubmitting) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const resolvedCategory = resolveCategory(formData.categoria)
+      const resolvedCategory = resolveCategory(formData.categoria);
 
-      // Enviamos la URL al backend
       const created = await createLocal({
         nombre_local: formData.nombre_local.trim(),
         actividad: formData.actividad.trim(),
         numero_local: formData.numero_local.trim(),
         planta: formData.planta.trim(),
         categoria: resolvedCategory.label,
-        foto: uploadedUrl || '', // ENVIAMOS LA URL DE IMGBB
-      })
+        foto: uploadedUrl || "",
+      });
 
       const mapped = {
         id: created.id,
@@ -138,68 +155,80 @@ export default function StoreGrid({
         actividad: created.actividad,
         numeroLocal: created.numero_local,
         planta: created.planta,
-        foto: uploadedUrl || created.foto, // Usamos la URL que acabamos de subir
+        foto: uploadedUrl || created.foto,
         fotoUrl: uploadedUrl || created.foto,
         categoriaId: resolvedCategory.id,
         categoria: resolvedCategory.label,
-      }
+      };
 
-      onLocalCreated(mapped)
-      setFormMessage('¡Local agregado con foto!')
+      onLocalCreated(mapped);
+      setFormMessage("¡Local agregado con foto!");
 
       setFormData({
-        nombre_local: '',
-        actividad: '',
-        numero_local: '',
-        planta: '',
-        categoria: formCategories[0]?.label || '',
+        nombre_local: "",
+        actividad: "",
+        numero_local: "",
+        planta: "",
+        categoria: formCategories[0]?.label || "",
         fotoFile: null,
-      })
-      setUploadedUrl('')
+      });
+      setUploadedUrl("");
     } catch (error) {
-      setFormMessage('Error al guardar.')
-      setFormHasError(true)
+      setFormMessage("Error al guardar.");
+      setFormHasError(true);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div id="locales" className="py-8 bg-gray-50">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <h2 className="text-3xl font-bold gradient-text">Locales</h2>
 
-        {isLoading && <p className="text-sm text-gray-500">Cargando locales...</p>}
-        {!isLoading && loadError && <p className="text-sm text-red-500">{loadError}</p>}
+        {isLoading && (
+          <p className="text-sm text-gray-500">Cargando locales...</p>
+        )}
+        {!isLoading && loadError && (
+          <p className="text-sm text-red-500">{loadError}</p>
+        )}
 
         <div className="grid grid-cols-2 gap-4 mt-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {stores.map((store) => (
+          {sortedStores.map((store) => (
             <button
               key={store.id}
               onClick={() => setSelectedStore(store)}
-              className="text-left transition-transform store-card aspect-square focus:outline-none hover:scale-105 overflow-hidden"
+              className="text-left transition-transform focus:outline-none hover:scale-[1.02] overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100"
             >
-              <div className="flex-shrink-0 flex items-center justify-center w-16 h-16 mx-auto mb-3 overflow-hidden bg-gray-200 rounded-full">
+              {/* Imagen grande tipo cover */}
+              <div className="relative w-full h-32 sm:h-36 bg-gray-100 overflow-hidden">
                 <img
                   src={getStoreImageUrl(store)}
-                  alt={store.nombreLocal || 'Local'}
-                  className="object-cover w-full h-full"
-                  crossOrigin="anonymous"
+                  alt={store.nombreLocal || "Local"}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
                   loading="lazy"
+                  crossOrigin="anonymous"
                   onError={(e) => {
-                    e.currentTarget.src = defaultLogo
-                    e.currentTarget.onerror = null
+                    e.currentTarget.src = defaultLogo;
+                    e.currentTarget.onerror = null;
                   }}
                 />
+                {/* degradado suave */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
               </div>
-              <div className="min-w-0 w-full flex-1 px-2 overflow-hidden flex flex-col justify-end">
+
+              {/* Texto */}
+              <div className="p-4">
                 <span className="block text-[10px] font-semibold uppercase text-[#1d1d99] truncate">
                   {store.categoria}
                 </span>
                 <span className="block text-xs font-semibold text-gray-500 truncate">
                   Local {store.numeroLocal}
                 </span>
-                <span className="block text-sm font-medium text-gray-700 truncate" title={store.nombreLocal}>
+                <span
+                  className="block mt-1 text-sm font-bold text-gray-900 truncate"
+                  title={store.nombreLocal}
+                >
                   {store.nombreLocal}
                 </span>
               </div>
@@ -207,22 +236,72 @@ export default function StoreGrid({
           ))}
         </div>
 
+        {!isLoading && !loadError && stores.length === 0 && (
+          <p className="mt-6 text-sm text-gray-500">{emptyMessage}</p>
+        )}
+
         {isDevEnv && (
           <div className="p-6 mt-10 bg-white border border-gray-200 border-dashed shadow-sm rounded-2xl">
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">Agregar local (solo desarrollo)</h3>
-            <p className="mb-4 text-xs text-gray-500">Las fotos se guardan en ImgBB para siempre.</p>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">
+              Agregar local (solo desarrollo)
+            </h3>
+            <p className="mb-4 text-xs text-gray-500">
+              Las fotos se guardan en ImgBB para siempre.
+            </p>
 
-            <form onSubmit={handleAddStore} className="grid gap-4 md:grid-cols-2">
-              <input name="nombre_local" placeholder="Nombre comercial" value={formData.nombre_local} onChange={handleChange} className="search-input" required />
-              <input name="actividad" placeholder="Actividad" value={formData.actividad} onChange={handleChange} className="search-input" required />
-              <select name="categoria" value={formData.categoria} onChange={handleChange} className="search-input">
-                {formCategories.map(cat => <option key={cat.id} value={cat.label}>{cat.label}</option>)}
+            <form
+              onSubmit={handleAddStore}
+              className="grid gap-4 md:grid-cols-2"
+            >
+              <input
+                name="nombre_local"
+                placeholder="Nombre comercial"
+                value={formData.nombre_local}
+                onChange={handleChange}
+                className="search-input"
+                required
+              />
+              <input
+                name="actividad"
+                placeholder="Actividad"
+                value={formData.actividad}
+                onChange={handleChange}
+                className="search-input"
+                required
+              />
+              <select
+                name="categoria"
+                value={formData.categoria}
+                onChange={handleChange}
+                className="search-input"
+              >
+                {formCategories.map((cat) => (
+                  <option key={cat.id} value={cat.label}>
+                    {cat.label}
+                  </option>
+                ))}
               </select>
-              <input name="numero_local" placeholder="Número Local (ej: L-10)" value={formData.numero_local} onChange={handleChange} className="search-input" required />
-              <input name="planta" placeholder="Planta" value={formData.planta} onChange={handleChange} className="search-input" required />
+              <input
+                name="numero_local"
+                placeholder="Número Local (ej: 10)"
+                value={formData.numero_local}
+                onChange={handleChange}
+                className="search-input"
+                required
+              />
+              <input
+                name="planta"
+                placeholder="Planta"
+                value={formData.planta}
+                onChange={handleChange}
+                className="search-input"
+                required
+              />
 
               <div className="md:col-span-2">
-                <label className="block mb-1 text-sm font-medium text-gray-700">Foto del local</label>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Foto del local
+                </label>
                 <input
                   type="file"
                   accept="image/*"
@@ -231,17 +310,31 @@ export default function StoreGrid({
                 />
               </div>
 
-              {isUploadingImage && <p className="text-xs font-bold text-blue-500 animate-pulse">Subiendo a ImgBB...</p>}
+              {isUploadingImage && (
+                <p className="text-xs font-bold text-blue-500 animate-pulse">
+                  Subiendo a ImgBB...
+                </p>
+              )}
 
               {uploadedUrl && (
                 <div className="flex items-center gap-4 p-2 rounded-lg md:col-span-2 bg-green-50">
-                  <img src={uploadedUrl} className="object-cover w-16 h-16 border border-green-200 rounded-full" alt="Vista previa" />
-                  <p className="text-sm font-medium text-green-700">¡Foto lista!</p>
+                  <img
+                    src={uploadedUrl}
+                    className="object-cover w-16 h-16 border border-green-200 rounded-full"
+                    alt="Vista previa"
+                  />
+                  <p className="text-sm font-medium text-green-700">
+                    ¡Foto lista!
+                  </p>
                 </div>
               )}
 
               {formMessage && (
-                <p className={`text-sm md:col-span-2 ${formHasError ? 'text-red-500' : 'text-emerald-600'}`}>
+                <p
+                  className={`text-sm md:col-span-2 ${
+                    formHasError ? "text-red-500" : "text-emerald-600"
+                  }`}
+                >
                   {formMessage}
                 </p>
               )}
@@ -251,7 +344,7 @@ export default function StoreGrid({
                 disabled={isSubmitting || isUploadingImage}
                 className="md:col-span-2 bg-[#0ACEE5] text-white py-2 rounded-full font-bold hover:bg-[#09bccf] disabled:bg-gray-300 transition-colors"
               >
-                {isSubmitting ? 'Guardando...' : 'Agregar local'}
+                {isSubmitting ? "Guardando..." : "Agregar local"}
               </button>
             </form>
           </div>
@@ -267,57 +360,50 @@ export default function StoreGrid({
             className="relative w-full max-w-xl mx-auto overflow-hidden transition-all transform bg-white shadow-2xl rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
-<div className="relative w-full overflow-hidden h-80 sm:h-96 rounded-t-3xl bg-gray-100">
-  {/* Imagen de fondo: ocupa todo el espacio, sin círculo */}
-  <img
-    src={getStoreImageUrl(selectedStore)}
-    alt={selectedStore.nombreLocal}
-    className="absolute inset-0 w-full h-full min-w-full min-h-full object-cover object-top rounded-none"
-    loading="lazy"
-    onError={(e) => {
-      e.currentTarget.src = defaultLogo
-      e.currentTarget.onerror = null
-    }}
-  />
+            <div className="relative w-full overflow-hidden h-80 sm:h-96 rounded-t-3xl bg-gray-100">
+              <img
+                src={getStoreImageUrl(selectedStore)}
+                alt={selectedStore.nombreLocal}
+                className="absolute inset-0 w-full h-full min-w-full min-h-full object-cover object-top rounded-none"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = defaultLogo;
+                  e.currentTarget.onerror = null;
+                }}
+              />
 
-  {/* DEGRADADO ENCIMA */}
-  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
-
-  {/* CHIPS ARRIBA A LA IZQUIERDA (opcional, pero queda pro) */}
-  <div className="absolute z-10 flex gap-2 left-4 top-4">
-    <span className="px-3 py-1 text-xs font-semibold text-gray-700 rounded-full shadow-sm bg-white/90">
-      {selectedStore.categoria}
-    </span>
-    <span className="px-3 py-1 text-xs font-semibold text-gray-700 rounded-full shadow-sm bg-white/90">
-      Local {selectedStore.numeroLocal}
-    </span>
-  </div>
-
-  {/* BOTÓN CERRAR */}
-  <button
-    onClick={() => setSelectedStore(null)}
-    className="absolute z-10 px-3 py-1 text-xs font-semibold text-gray-700 transition rounded-full shadow-sm right-4 top-4 bg-white/90 hover:bg-white"
-  >
-    Cerrar
-  </button>
-</div>
-
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+            </div>
 
             <div className="p-6 space-y-4">
               <div className="text-center sm:text-left">
-                <h3 className="text-2xl font-bold text-gray-900">{selectedStore.nombreLocal}</h3>
-                <p className="text-lg text-gray-600">{selectedStore.actividad}</p>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {selectedStore.nombreLocal}
+                </h3>
+                <p className="text-lg text-gray-600">
+                  {selectedStore.actividad}
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
-                  <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">Ubicación</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-800">Local {selectedStore.numeroLocal}</p>
-                  <p className="text-xs text-gray-500">{selectedStore.planta}</p>
+                  <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">
+                    Ubicación
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-gray-800">
+                    Local {selectedStore.numeroLocal}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Planta {selectedStore.planta}
+                  </p>
                 </div>
                 <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
-                  <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">Categoría</p>
-                  <p className="mt-1 text-sm font-semibold text-gray-800">{selectedStore.categoria}</p>
+                  <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">
+                    Categoría
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-gray-800">
+                    {selectedStore.categoria}
+                  </p>
                 </div>
               </div>
 
@@ -332,5 +418,5 @@ export default function StoreGrid({
         </div>
       )}
     </div>
-  )
+  );
 }

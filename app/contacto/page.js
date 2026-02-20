@@ -49,7 +49,7 @@ export default function ContactoPage() {
                     Dirección:
                   </span>{" "}
                   Calle 10 de Agosto, entre Francisco Pacheco y García Moreno,
-                  Portoviejo
+                  Portoviejo, Ecuador.
                 </p>
                 <p>
                   <span className="font-semibold text-gray-900">Teléfono:</span>{" "}

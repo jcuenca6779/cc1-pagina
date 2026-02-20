@@ -1,30 +1,29 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
-  const pathname = usePathname()
+  const pathname = usePathname();
   const menuItems = [
-    { name: 'Inicio', href: '/' },
-    { name: 'Locales', href: '/locales' },
-    { name: 'Contáctenos', href: '/contacto' },
-  ]
+    { name: "Inicio", href: "/" },
+    { name: "Locales", href: "/locales" },
+    { name: "Contáctenos", href: "/contacto" },
+  ];
 
   const isActiveRoute = (href) => {
-    if (href === '/') {
-      return pathname === '/'
+    if (href === "/") {
+      return pathname === "/";
     }
 
-    return pathname.startsWith(href)
-  }
+    return pathname.startsWith(href);
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-sm">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div className="relative flex items-center h-16">
-          
+        <div className="relative flex items-center h-24">
           {/* Logo */}
           <div className="absolute left-0 flex-shrink-0">
             <Link href="/" className="block">
@@ -46,18 +45,18 @@ export default function Navbar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`group relative inline-flex items-center pb-1 font-medium transition-colors duration-200 ${
+                className={`group relative inline-flex items-center pb-1 text-lg font-semibold transition-colors duration-200 ${
                   isActiveRoute(item.href)
-                    ? 'text-blue-600'
-                    : 'text-gray-700 hover:text-blue-600'
+                    ? "text-blue-600"
+                    : "text-gray-700 hover:text-blue-600"
                 }`}
               >
                 <span className="relative z-10">{item.name}</span>
                 <span
                   className={`absolute left-0 right-0 -bottom-0.5 h-0.5 rounded-full bg-blue-600 transition-transform duration-200 ${
                     isActiveRoute(item.href)
-                      ? 'scale-x-100'
-                      : 'scale-x-0 group-hover:scale-x-100'
+                      ? "scale-x-100"
+                      : "scale-x-0 group-hover:scale-x-100"
                   } origin-left`}
                 />
               </Link>
@@ -74,16 +73,16 @@ export default function Navbar() {
                 href={item.href}
                 className={`group relative inline-flex items-center pb-1 text-sm font-medium transition-colors ${
                   isActiveRoute(item.href)
-                    ? 'text-blue-600'
-                    : 'text-gray-700 hover:text-blue-600'
+                    ? "text-blue-600"
+                    : "text-gray-700 hover:text-blue-600"
                 }`}
               >
                 <span className="relative z-10">{item.name}</span>
                 <span
                   className={`absolute left-0 right-0 -bottom-0.5 h-0.5 rounded-full bg-blue-600 transition-transform duration-200 ${
                     isActiveRoute(item.href)
-                      ? 'scale-x-100'
-                      : 'scale-x-0 group-hover:scale-x-100'
+                      ? "scale-x-100"
+                      : "scale-x-0 group-hover:scale-x-100"
                   } origin-left`}
                 />
               </Link>
@@ -92,5 +91,5 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
-  )
+  );
 }
