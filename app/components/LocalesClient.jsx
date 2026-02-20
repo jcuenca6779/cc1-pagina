@@ -78,14 +78,14 @@ const mapApiItem = (item) => {
   }
 }
 
-export default function LocalesClient({ initialApiLocales = null, initialError = '' } = {}) {
+export default function LocalesClient({ initialApiLocales = null, initialError = '', initialSearchTerm = '' } = {}) {
   const hasInitial = Array.isArray(initialApiLocales)
   const [stores, setStores] = useState(() =>
     hasInitial ? initialApiLocales.map(mapApiItem) : []
   )
   const [isLoading, setIsLoading] = useState(!hasInitial)
   const [loadError, setLoadError] = useState(initialError)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm)
   const [selectedCategoryId, setSelectedCategoryId] = useState(
     ALL_CATEGORIES_OPTION.id
   )
@@ -182,6 +182,12 @@ export default function LocalesClient({ initialApiLocales = null, initialError =
     setStores((prev) => [newStore, ...prev])
   }
 
+  const handleLocalUpdated = (updatedStore) => {
+    setStores((prev) =>
+      prev.map((s) => (s.id === updatedStore.id ? { ...s, ...updatedStore } : s))
+    )
+  }
+
   const hasFilters =
     Boolean(searchTerm.trim()) ||
     Boolean(selectedLetter) ||
@@ -190,6 +196,15 @@ export default function LocalesClient({ initialApiLocales = null, initialError =
   const emptyMessage = hasFilters
     ? 'No hay locales con los filtros seleccionados.'
     : 'No hay locales registrados.'
+
+  const defaultLogo = '/assets/images/logocompleto.png'
+  const getStoreImageUrl = (store) => {
+    if (!store) return defaultLogo
+    const url = store.fotoUrl || store.foto
+    if (!url) return defaultLogo
+    if (url.startsWith('http')) return url
+    return store.fotoUrl || defaultLogo
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
