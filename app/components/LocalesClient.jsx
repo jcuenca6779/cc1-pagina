@@ -90,6 +90,7 @@ export default function LocalesClient({ initialApiLocales = null, initialError =
     ALL_CATEGORIES_OPTION.id
   )
   const [selectedLetter, setSelectedLetter] = useState(null)
+  const showBackendGallery = process.env.NODE_ENV === 'development'
 
   const categories = useMemo(() => {
     const map = new Map(CATEGORIES.map((category) => [category.id, category]))
@@ -110,6 +111,11 @@ export default function LocalesClient({ initialApiLocales = null, initialError =
 
   useEffect(() => {
     if (hasInitial) {
+      return
+    }
+
+    if (process.env.NODE_ENV !== 'development') {
+      setIsLoading(false)
       return
     }
 
@@ -222,7 +228,7 @@ export default function LocalesClient({ initialApiLocales = null, initialError =
       />
 
       {/* Sección: ver todas las fotos subidas al backend */}
-      {stores.length > 0 && (
+      {showBackendGallery && stores.length > 0 && (
         <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8 bg-white border-t border-gray-100">
           <h2 className="mb-4 text-xl font-bold text-gray-800">Fotos subidas al backend</h2>
           <p className="mb-6 text-sm text-gray-500">
