@@ -16,10 +16,9 @@ const roboto = Roboto({
 })
 
 export const metadata = {
-  title: 'CC1 - Centro Comercial Uno',
-  description: 'Centro Comercial Uno en Portoviejo',
+  title: 'CC1 - Directorio Comercial',
+  description: 'Directorio comercial de Portoviejo',
 }
-
 
 export default function RootLayout({ children }) {
   return (

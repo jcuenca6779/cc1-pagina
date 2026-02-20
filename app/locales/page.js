@@ -1,5 +1,3 @@
-// src/app/locales/page.js
-
 import LocalesClient from '../components/LocalesClient'
 import { getLocales } from '../../api/locales'
 
@@ -8,10 +6,9 @@ export const metadata = {
   description: 'Directorio de locales comerciales y emprendimientos.',
 }
 
-export default async function LocalesPage({ searchParams }) {
+export default async function LocalesPage() {
   let initialLocales = null
   let initialError = ''
-  const initialSearchTerm = typeof searchParams?.q === 'string' ? searchParams.q : ''
 
   try {
     initialLocales = await getLocales()
@@ -20,10 +17,6 @@ export default async function LocalesPage({ searchParams }) {
   }
 
   return (
-    <LocalesClient
-      initialApiLocales={initialLocales}
-      initialError={initialError}
-      initialSearchTerm={initialSearchTerm}
-    />
+    <LocalesClient initialApiLocales={initialLocales} initialError={initialError} />
   )
 }
