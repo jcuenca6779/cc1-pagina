@@ -1,22 +1,27 @@
-const API_URL = 'http://localhost:3000'; // Ajusta a tu URL real
+// api/locales.js (o .ts)
 
-export const getLocales = async () => {
-  const res = await fetch(`${API_URL}/locales`);
-  return res.json();
-};
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-export const createLocal = async (data) => {
-  const res = await fetch(`${API_URL}/locales`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  return res.json();
-};
-
-export const deleteLocal = async (id) => {
+// EDITAR
+export async function updateLocal(id, payload) {
   const res = await fetch(`${API_URL}/locales/${id}`, {
-    method: 'DELETE',
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store",
   });
+
+  if (!res.ok) throw new Error("No se pudo actualizar el local");
   return res.json();
-};
+}
+
+// ELIMINAR
+export async function deleteLocal(id) {
+  const res = await fetch(`${API_URL}/locales/${id}`, {
+    method: "DELETE",
+    cache: "no-store",
+  });
+
+  if (!res.ok) throw new Error("No se pudo eliminar el local");
+  return true;
+}

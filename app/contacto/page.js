@@ -1,3 +1,4 @@
+import ContactForm from "../components/ContactForm";
 import Footer from "../components/Footer";
 
 export const metadata = {
@@ -67,52 +68,7 @@ export default function ContactoPage() {
             </div>
 
             {/* Escribenos */}
-            <div className="p-6 bg-white shadow-sm rounded-2xl">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Escríbenos
-              </h2>
-
-              <p className="mt-2 text-sm text-gray-600">
-                Nos contactaremos contigo lo antes posible.
-              </p>
-
-              <form className="grid gap-3 mt-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <input
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#0ACEE5]"
-                    placeholder="Nombre"
-                  />
-                  <input
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#0ACEE5]"
-                    placeholder="Teléfono"
-                  />
-                </div>
-
-                <input
-                  type="email"
-                  className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#0ACEE5]"
-                  placeholder="Correo"
-                />
-
-                <input
-                  className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#0ACEE5]"
-                  placeholder="Asunto"
-                />
-
-                <textarea
-                  rows={4}
-                  className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-[#0ACEE5]"
-                  placeholder="Mensaje"
-                />
-
-                <button
-                  type="button"
-                  className="mt-1 rounded-full bg-[#0ACEE5] px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#08b7cc]"
-                >
-                  Enviar mensaje
-                </button>
-              </form>
-            </div>
+            <ContactForm />
           </div>
         </section>
       </main>

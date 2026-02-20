@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { createLocal } from "../../api/locales";
+import { createLocal, updateLocal, deleteLocal } from "../../api/locales";
 import { uploadToImgBB } from "../api/imgbb";
 import { CATEGORIES, resolveCategory } from "../data/categories";
 
@@ -16,6 +16,8 @@ export default function StoreGrid({
   categories = [],
   onLocalCreated = () => {},
 } = {}) {
+  const isDevEnv = process.env.NODE_ENV !== "production";
+
   const [selectedStore, setSelectedStore] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -31,10 +33,17 @@ export default function StoreGrid({
   const [formHasError, setFormHasError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-
   const [uploadedUrl, setUploadedUrl] = useState("");
 
-  const isDevEnv = process.env.NODE_ENV !== "production";
+  // edición
+  const [editingStore, setEditingStore] = useState(null);
+  const [editData, setEditData] = useState({
+    nombre_local: "",
+    actividad: "",
+    numero_local: "",
+    planta: "",
+    categoria: "",
+  });
 
   const formCategories = useMemo(
     () => (categories.length > 0 ? categories : fallbackCategories),
@@ -61,27 +70,27 @@ export default function StoreGrid({
   useEffect(() => {
     if (!selectedStore) return;
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") setSelectedStore(null);
+      if (event.key === "Escape") {
+        setSelectedStore(null);
+        setEditingStore(null);
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedStore]);
 
-  // --- FUNCIÓN PARA OBTENER LA IMAGEN ---
   const getStoreImageUrl = (store) => {
     if (!store) return defaultLogo;
 
     const rawPhoto = store.foto || store.fotoUrl;
     if (!rawPhoto) return defaultLogo;
 
-    if (rawPhoto.startsWith("http") || rawPhoto.startsWith("https")) {
+    if (rawPhoto.startsWith("http") || rawPhoto.startsWith("https"))
       return rawPhoto;
-    }
-
     return defaultLogo;
   };
 
-  // ORDEN DE LOCALES POR NÚMEROS
+  // ORDEN SECUENCIAL POR NÚMERO (extrae dígitos de "L-10", "Local 10", "10", etc.)
   const sortedStores = useMemo(() => {
     const toNumber = (val) => {
       const digits =
@@ -118,7 +127,6 @@ export default function StoreGrid({
     setIsUploadingImage(true);
     try {
       const url = await uploadToImgBB(file);
-      console.log("Imagen subida a ImgBB:", url);
       setUploadedUrl(url);
     } catch (error) {
       setFormMessage("Error al subir a ImgBB.");
@@ -181,6 +189,58 @@ export default function StoreGrid({
     }
   };
 
+  // --- EDITAR / ELIMINAR ---
+  const startEdit = (store) => {
+    setEditingStore(store);
+    setEditData({
+      nombre_local: store?.nombreLocal || "",
+      actividad: store?.actividad || "",
+      numero_local: String(store?.numeroLocal || ""),
+      planta: store?.planta || "",
+      categoria: store?.categoria || "",
+    });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingStore) return;
+
+    try {
+      const resolvedCategory = resolveCategory(editData.categoria);
+
+      await updateLocal(editingStore.id, {
+        nombre_local: editData.nombre_local.trim(),
+        actividad: editData.actividad.trim(),
+        numero_local: editData.numero_local.trim(),
+        planta: editData.planta.trim(),
+        categoria: resolvedCategory.label,
+      });
+
+      window.location.reload();
+    } catch (err) {
+      setFormMessage("Error al actualizar.");
+      setFormHasError(true);
+    }
+  };
+
+  const handleDelete = async (store) => {
+    if (!store) return;
+
+    const ok = confirm(
+      `¿Eliminar "${store.nombreLocal}" (Local ${store.numeroLocal})?`
+    );
+    if (!ok) return;
+
+    try {
+      await deleteLocal(store.id);
+
+      window.location.reload();
+    } catch (err) {
+      setFormMessage("Error al eliminar.");
+      setFormHasError(true);
+    }
+  };
+
   return (
     <div id="locales" className="py-8 bg-gray-50">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
@@ -200,7 +260,6 @@ export default function StoreGrid({
               onClick={() => setSelectedStore(store)}
               className="text-left transition-transform focus:outline-none hover:scale-[1.02] overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100"
             >
-              {/* Imagen grande tipo cover */}
               <div className="relative w-full h-32 sm:h-36 bg-gray-100 overflow-hidden">
                 <img
                   src={getStoreImageUrl(store)}
@@ -213,11 +272,9 @@ export default function StoreGrid({
                     e.currentTarget.onerror = null;
                   }}
                 />
-                {/* degradado suave */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
               </div>
 
-              {/* Texto */}
               <div className="p-4">
                 <span className="block text-[10px] font-semibold uppercase text-[#1d1d99] truncate">
                   {store.categoria}
@@ -291,7 +348,7 @@ export default function StoreGrid({
               />
               <input
                 name="planta"
-                placeholder="Planta"
+                placeholder="Planta (Alta/Baja)"
                 value={formData.planta}
                 onChange={handleChange}
                 className="search-input"
@@ -351,10 +408,14 @@ export default function StoreGrid({
         )}
       </div>
 
+      {/* MODAL */}
       {selectedStore && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 duration-200 bg-black/60 animate-in fade-in"
-          onClick={() => setSelectedStore(null)}
+          onClick={() => {
+            setSelectedStore(null);
+            setEditingStore(null);
+          }}
         >
           <div
             className="relative w-full max-w-xl mx-auto overflow-hidden transition-all transform bg-white shadow-2xl rounded-3xl"
@@ -364,14 +425,13 @@ export default function StoreGrid({
               <img
                 src={getStoreImageUrl(selectedStore)}
                 alt={selectedStore.nombreLocal}
-                className="absolute inset-0 w-full h-full min-w-full min-h-full object-cover object-top rounded-none"
+                className="absolute inset-0 w-full h-full object-cover object-top"
                 loading="lazy"
                 onError={(e) => {
                   e.currentTarget.src = defaultLogo;
                   e.currentTarget.onerror = null;
                 }}
               />
-
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
             </div>
 
@@ -397,6 +457,7 @@ export default function StoreGrid({
                     Planta {selectedStore.planta}
                   </p>
                 </div>
+
                 <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
                   <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">
                     Categoría
@@ -407,12 +468,115 @@ export default function StoreGrid({
                 </div>
               </div>
 
-              <button
-                onClick={() => setSelectedStore(null)}
-                className="w-full rounded-full bg-[#0ACEE5] py-3 font-bold text-white hover:bg-[#09bccf] transition-colors shadow-lg shadow-cyan-500/30"
-              >
-                Listo
-              </button>
+              {/* BOTONES DEV */}
+              {isDevEnv && !editingStore && (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => startEdit(selectedStore)}
+                    className="w-full rounded-full border border-gray-200 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(selectedStore)}
+                    className="w-full rounded-full bg-red-500 py-2 font-semibold text-white hover:bg-red-600"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              )}
+
+              {/* FORM EDIT */}
+              {isDevEnv && editingStore && (
+                <form onSubmit={handleSaveEdit} className="grid gap-3">
+                  <input
+                    value={editData.nombre_local}
+                    onChange={(e) =>
+                      setEditData((p) => ({
+                        ...p,
+                        nombre_local: e.target.value,
+                      }))
+                    }
+                    className="search-input"
+                    placeholder="Nombre"
+                    required
+                  />
+                  <input
+                    value={editData.actividad}
+                    onChange={(e) =>
+                      setEditData((p) => ({ ...p, actividad: e.target.value }))
+                    }
+                    className="search-input"
+                    placeholder="Actividad"
+                    required
+                  />
+                  <input
+                    value={editData.numero_local}
+                    onChange={(e) =>
+                      setEditData((p) => ({
+                        ...p,
+                        numero_local: e.target.value,
+                      }))
+                    }
+                    className="search-input"
+                    placeholder="Número (ej: 10)"
+                    required
+                  />
+                  <input
+                    value={editData.planta}
+                    onChange={(e) =>
+                      setEditData((p) => ({ ...p, planta: e.target.value }))
+                    }
+                    className="search-input"
+                    placeholder="Planta (Alta/Baja)"
+                    required
+                  />
+
+                  <select
+                    value={editData.categoria}
+                    onChange={(e) =>
+                      setEditData((p) => ({ ...p, categoria: e.target.value }))
+                    }
+                    className="search-input"
+                  >
+                    {formCategories.map((cat) => (
+                      <option key={cat.id} value={cat.label}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditingStore(null)}
+                      className="rounded-full border border-gray-200 py-2 font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="rounded-full bg-[#0ACEE5] py-2 font-bold text-white hover:bg-[#09bccf]"
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* LISTO */}
+              {!editingStore && (
+                <button
+                  onClick={() => {
+                    setSelectedStore(null);
+                    setEditingStore(null);
+                  }}
+                  className="w-full rounded-full bg-[#0ACEE5] py-3 font-bold text-white hover:bg-[#09bccf] transition-colors shadow-lg shadow-cyan-500/30"
+                >
+                  Listo
+                </button>
+              )}
             </div>
           </div>
         </div>
