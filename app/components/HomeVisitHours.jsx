@@ -11,7 +11,7 @@ export default function HomeVisitHours() {
       <section className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-3xl min-h-[320px]">
           <Image
-            src="/assets/images/cc1dron.jpeg"
+            src="/assets/images/cc1-frontal.jpg"
             alt="Instalaciones CC1"
             fill
             className="object-cover"

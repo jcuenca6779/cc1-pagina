@@ -2,13 +2,13 @@
 
 import {
   Building2,
-  Info,
   UtensilsCrossed,
   Presentation,
   ParkingCircle,
   Landmark,
-  ShieldCheck,
   Shield,
+  ShieldCheck,
+  Store,
 } from "lucide-react";
 
 const SERVICES = [
@@ -27,12 +27,6 @@ const SERVICES = [
       "Disponibles cajeros del Banco del Pacífico y Banco Internacional.",
   },
   {
-    id: "isla-info",
-    icon: Info,
-    title: "Isla de información",
-    description: "El punto de información se encuentra en planta alta.",
-  },
-  {
     id: "parqueo",
     icon: ParkingCircle,
     title: "Parqueo privado",
@@ -46,19 +40,22 @@ const SERVICES = [
     description:
       "Sistema de seguridad y vigilancia permanente para tranquilidad de nuestros visitantes.",
   },
+
+  // ✅ NUEVO
+  {
+    id: "locales-comerciales",
+    icon: Store,
+    title: "Locales comerciales",
+    description:
+      "El CC1 cuenta con una variedad de locales comerciales con productos y servicios para distintos públicos, impulsando el comercio local en Portoviejo.",
+  },
+
   {
     id: "sala-conferencias",
     icon: Presentation,
     title: "Sala de conferencias",
     description:
       "Espacio para reuniones, charlas y actividades institucionales.",
-  },
-  {
-    id: "oficinas",
-    icon: Building2,
-    title: "Oficinas",
-    description:
-      "Espacios para profesionales y empresas en el centro comercial.",
   },
   {
     id: "patio-comidas",

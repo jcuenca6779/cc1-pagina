@@ -1,142 +1,153 @@
-// app/components/StoreGrid.jsx
+"use client";
 
-'use client'
+import { useEffect, useMemo, useState } from "react";
+import { createLocal } from "../../api/locales";
+import { uploadToImgBB } from "../api/imgbb";
+import { CATEGORIES, resolveCategory } from "../data/categories";
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { createLocal } from '../../api/locales' 
-// Asegúrate de que la ruta sea correcta
-import { uploadToImgBB } from '../api/imgbb' 
-import { CATEGORIES, resolveCategory } from '../data/categories'
-
-const defaultLogo = '/assets/images/logocompleto.png'
-const fallbackCategories = CATEGORIES
+const defaultLogo = "/assets/images/logocompleto.png";
+const fallbackCategories = CATEGORIES;
 
 export default function StoreGrid({
   stores = [],
   isLoading = false,
-  loadError = '',
-  emptyMessage = 'No hay locales registrados.',
+  loadError = "",
+  emptyMessage = "No hay locales registrados.",
   categories = [],
   onLocalCreated = () => {},
 } = {}) {
-  const [selectedStore, setSelectedStore] = useState(null)
-  
-  const [formData, setFormData] = useState({
-    nombre_local: '',
-    actividad: '',
-    numero_local: '',
-    planta: '',
-    categoria: categories[0]?.label || fallbackCategories[0]?.label || '',
-    fotoFile: null,
-  })
+  const [selectedStore, setSelectedStore] = useState(null);
 
-  const [formMessage, setFormMessage] = useState('')
-  const [formHasError, setFormHasError] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isUploadingImage, setIsUploadingImage] = useState(false)
-  
-  const [uploadedUrl, setUploadedUrl] = useState('')
-  const imgURL = useRef('')
-  const isDevEnv = process.env.NODE_ENV !== 'production'
-  
+  const [formData, setFormData] = useState({
+    nombre_local: "",
+    actividad: "",
+    numero_local: "",
+    planta: "",
+    categoria: categories[0]?.label || fallbackCategories[0]?.label || "",
+    fotoFile: null,
+  });
+
+  const [formMessage, setFormMessage] = useState("");
+  const [formHasError, setFormHasError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const [uploadedUrl, setUploadedUrl] = useState("");
+
+  const isDevEnv = process.env.NODE_ENV !== "production";
+
   const formCategories = useMemo(
     () => (categories.length > 0 ? categories : fallbackCategories),
     [categories]
-  )
+  );
 
   const isFormValid =
     formData.nombre_local.trim() &&
     formData.actividad.trim() &&
     formData.numero_local.trim() &&
     formData.planta.trim() &&
-    formData.categoria.trim()
+    formData.categoria.trim();
 
   useEffect(() => {
     if (!formData.categoria.trim() && formCategories.length > 0) {
       setFormData((prev) => ({
         ...prev,
-        categoria: formCategories[0]?.label || fallbackCategories[0]?.label || '',
-      }))
+        categoria:
+          formCategories[0]?.label || fallbackCategories[0]?.label || "",
+      }));
     }
-  }, [formCategories, formData.categoria])
+  }, [formCategories, formData.categoria]);
 
   useEffect(() => {
-    if (!selectedStore) return
+    if (!selectedStore) return;
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setSelectedStore(null)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedStore])
+      if (event.key === "Escape") setSelectedStore(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedStore]);
 
   // --- FUNCIÓN PARA OBTENER LA IMAGEN ---
   const getStoreImageUrl = (store) => {
     if (!store) return defaultLogo;
 
-    // Priorizamos la URL que viene del backend (foto) o la del frontend (fotoUrl)
     const rawPhoto = store.foto || store.fotoUrl;
-    console.log('Obteniendo imagen para store:', store.nombreLocal, 'Foto raw:', rawPhoto);
     if (!rawPhoto) return defaultLogo;
 
-    // Si es un link web válido (ImgBB, etc.), lo usamos.
-    if (rawPhoto.startsWith('http') || rawPhoto.startsWith('https')) {
-      return rawPhoto; 
+    if (rawPhoto.startsWith("http") || rawPhoto.startsWith("https")) {
+      return rawPhoto;
     }
 
-    // Si no es un link http, asumimos que es inválido o viejo y devolvemos el logo
     return defaultLogo;
-  }
+  };
+
+  // ORDEN DE LOCALES POR NÚMEROS
+  const sortedStores = useMemo(() => {
+    const toNumber = (val) => {
+      const digits =
+        String(val ?? "")
+          .match(/\d+/g)
+          ?.join("") || "";
+      return digits ? parseInt(digits, 10) : Number.POSITIVE_INFINITY;
+    };
+
+    return [...stores].sort((a, b) => {
+      const numA = toNumber(a?.numeroLocal);
+      const numB = toNumber(b?.numeroLocal);
+
+      if (numA !== numB) return numA - numB;
+
+      const plantaA = String(a?.planta ?? "");
+      const plantaB = String(b?.planta ?? "");
+      return plantaA.localeCompare(plantaB, "es", { sensitivity: "base" });
+    });
+  }, [stores]);
 
   const handleChange = (event) => {
-    const { name, value } = event.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleFileChange = async (event) => {
-    const file = event.target.files?.[0] || null
-    setFormData((prev) => ({ ...prev, fotoFile: file }))
-    setUploadedUrl('') 
-    imgURL.current = ''
+    const file = event.target.files?.[0] || null;
+    setFormData((prev) => ({ ...prev, fotoFile: file }));
+    setUploadedUrl("");
 
-    if (!file) return
+    if (!file) return;
 
-    setIsUploadingImage(true)
+    setIsUploadingImage(true);
     try {
-      const url = await uploadToImgBB(file)
-      console.log('Imagen subida a ImgBB:', url)
-      imgURL.current = url
-      setUploadedUrl(url)
+      const url = await uploadToImgBB(file);
+      console.log("Imagen subida a ImgBB:", url);
+      setUploadedUrl(url);
     } catch (error) {
-      setFormMessage('Error al subir a ImgBB.')
-      setFormHasError(true)
+      setFormMessage("Error al subir a ImgBB.");
+      setFormHasError(true);
     } finally {
-      setIsUploadingImage(false)
-      
+      setIsUploadingImage(false);
     }
-  }
+  };
 
   const handleAddStore = async (event) => {
-    event.preventDefault()
-    setFormMessage('')
-    setFormHasError(false)
+    event.preventDefault();
+    setFormMessage("");
+    setFormHasError(false);
 
-    if (!isDevEnv || !isFormValid || isSubmitting) return
+    if (!isDevEnv || !isFormValid || isSubmitting) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
-      const resolvedCategory = resolveCategory(formData.categoria)
-      console.log('Categoría resuelta:', imgURL.current, resolvedCategory)
-      
-      // Enviamos la URL al backend
+      const resolvedCategory = resolveCategory(formData.categoria);
+
       const created = await createLocal({
         nombre_local: formData.nombre_local.trim(),
         actividad: formData.actividad.trim(),
         numero_local: formData.numero_local.trim(),
         planta: formData.planta.trim(),
         categoria: resolvedCategory.label,
-        foto: imgURL.current || '', // ENVIAMOS LA URL DE IMGBB
-      })
+        foto: uploadedUrl || "",
+      });
 
       const mapped = {
         id: created.id,
@@ -144,69 +155,80 @@ export default function StoreGrid({
         actividad: created.actividad,
         numeroLocal: created.numero_local,
         planta: created.planta,
-        foto: uploadedUrl || created.foto, // Usamos la URL que acabamos de subir
+        foto: uploadedUrl || created.foto,
         fotoUrl: uploadedUrl || created.foto,
         categoriaId: resolvedCategory.id,
         categoria: resolvedCategory.label,
-      }
+      };
 
-      onLocalCreated(mapped)
-      setFormMessage('¡Local agregado con foto!')
-      
+      onLocalCreated(mapped);
+      setFormMessage("¡Local agregado con foto!");
+
       setFormData({
-        nombre_local: '',
-        actividad: '',
-        numero_local: '',
-        planta: '',
-        categoria: formCategories[0]?.label || '',
+        nombre_local: "",
+        actividad: "",
+        numero_local: "",
+        planta: "",
+        categoria: formCategories[0]?.label || "",
         fotoFile: null,
-      })
-      setUploadedUrl('')
+      });
+      setUploadedUrl("");
     } catch (error) {
-      setFormMessage('Error al guardar.')
-      setFormHasError(true)
+      setFormMessage("Error al guardar.");
+      setFormHasError(true);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div id="locales" className="py-8 bg-gray-50">
       <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <h2 className="text-3xl font-bold gradient-text">Locales</h2>
 
-        {isLoading && <p className="text-sm text-gray-500">Cargando locales...</p>}
-        {!isLoading && loadError && <p className="text-sm text-red-500">{loadError}</p>}
+        {isLoading && (
+          <p className="text-sm text-gray-500">Cargando locales...</p>
+        )}
+        {!isLoading && loadError && (
+          <p className="text-sm text-red-500">{loadError}</p>
+        )}
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 mt-6">
-          {stores.map((store) => (
+        <div className="grid grid-cols-2 gap-4 mt-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          {sortedStores.map((store) => (
             <button
               key={store.id}
               onClick={() => setSelectedStore(store)}
-              className="store-card aspect-square text-left focus:outline-none transition-transform hover:scale-105"
+              className="text-left transition-transform focus:outline-none hover:scale-[1.02] overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100"
             >
-              <div className="flex items-center justify-center w-16 h-16 mb-3 overflow-hidden bg-gray-200 rounded-full mx-auto">
+              {/* Imagen grande tipo cover */}
+              <div className="relative w-full h-32 sm:h-36 bg-gray-100 overflow-hidden">
                 <img
                   src={getStoreImageUrl(store)}
-                  alt={store.nombreLocal || 'Local'}
-                  className="h-full w-full object-cover"
-                  // QUITAMOS EL STYLE QUE DABA ERROR DE ASPECT RATIO
-                  crossOrigin="anonymous"
+                  alt={store.nombreLocal || "Local"}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
                   loading="lazy"
+                  crossOrigin="anonymous"
                   onError={(e) => {
-                    e.currentTarget.src = defaultLogo
-                    e.currentTarget.onerror = null
+                    e.currentTarget.src = defaultLogo;
+                    e.currentTarget.onerror = null;
                   }}
                 />
+                {/* degradado suave */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
               </div>
-              <div className="px-2 w-full min-w-0">
-                <span className="block text-[10px] font-semibold uppercase text-[#1d1d99]">
+
+              {/* Texto */}
+              <div className="p-4">
+                <span className="block text-[10px] font-semibold uppercase text-[#1d1d99] truncate">
                   {store.categoria}
                 </span>
-                <span className="block text-xs font-semibold text-gray-500">
+                <span className="block text-xs font-semibold text-gray-500 truncate">
                   Local {store.numeroLocal}
                 </span>
-                <span className="store-card-title block text-sm font-medium text-gray-700">
+                <span
+                  className="block mt-1 text-sm font-bold text-gray-900 truncate"
+                  title={store.nombreLocal}
+                >
                   {store.nombreLocal}
                 </span>
               </div>
@@ -214,51 +236,115 @@ export default function StoreGrid({
           ))}
         </div>
 
+        {!isLoading && !loadError && stores.length === 0 && (
+          <p className="mt-6 text-sm text-gray-500">{emptyMessage}</p>
+        )}
+
         {isDevEnv && (
-          <div className="mt-10 rounded-2xl border border-dashed border-gray-200 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Agregar local (solo desarrollo)</h3>
-            <p className="text-xs text-gray-500 mb-4">Las fotos se guardan en ImgBB para siempre.</p>
-            
-            <form onSubmit={handleAddStore} className="grid gap-4 md:grid-cols-2">
-              <input name="nombre_local" placeholder="Nombre comercial" value={formData.nombre_local} onChange={handleChange} className="search-input" required />
-              <input name="actividad" placeholder="Actividad" value={formData.actividad} onChange={handleChange} className="search-input" required />
-              <select name="categoria" value={formData.categoria} onChange={handleChange} className="search-input">
-                {formCategories.map(cat => <option key={cat.id} value={cat.label}>{cat.label}</option>)}
+          <div className="p-6 mt-10 bg-white border border-gray-200 border-dashed shadow-sm rounded-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">
+              Agregar local (solo desarrollo)
+            </h3>
+            <p className="mb-4 text-xs text-gray-500">
+              Las fotos se guardan en ImgBB para siempre.
+            </p>
+
+            <form
+              onSubmit={handleAddStore}
+              className="grid gap-4 md:grid-cols-2"
+            >
+              <input
+                name="nombre_local"
+                placeholder="Nombre comercial"
+                value={formData.nombre_local}
+                onChange={handleChange}
+                className="search-input"
+                required
+              />
+              <input
+                name="actividad"
+                placeholder="Actividad"
+                value={formData.actividad}
+                onChange={handleChange}
+                className="search-input"
+                required
+              />
+              <select
+                name="categoria"
+                value={formData.categoria}
+                onChange={handleChange}
+                className="search-input"
+              >
+                {formCategories.map((cat) => (
+                  <option key={cat.id} value={cat.label}>
+                    {cat.label}
+                  </option>
+                ))}
               </select>
-              <input name="numero_local" placeholder="Número Local (ej: L-10)" value={formData.numero_local} onChange={handleChange} className="search-input" required />
-              <input name="planta" placeholder="Planta" value={formData.planta} onChange={handleChange} className="search-input" required />
-              
+              <input
+                name="numero_local"
+                placeholder="Número Local (ej: 10)"
+                value={formData.numero_local}
+                onChange={handleChange}
+                className="search-input"
+                required
+              />
+              <input
+                name="planta"
+                placeholder="Planta"
+                value={formData.planta}
+                onChange={handleChange}
+                className="search-input"
+                required
+              />
+
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Foto del local</label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleFileChange} 
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Foto del local
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
 
-              {isUploadingImage && <p className="text-xs text-blue-500 font-bold animate-pulse">Subiendo a ImgBB...</p>}
-              
+              {isUploadingImage && (
+                <p className="text-xs font-bold text-blue-500 animate-pulse">
+                  Subiendo a ImgBB...
+                </p>
+              )}
+
               {uploadedUrl && (
-                <div className="md:col-span-2 flex gap-4 items-center bg-green-50 p-2 rounded-lg">
-                  <img src={uploadedUrl} className="h-16 w-16 object-cover rounded-full border border-green-200" alt="Vista previa" />
-                  <p className="text-sm text-green-700 font-medium">¡Foto lista!</p>
+                <div className="flex items-center gap-4 p-2 rounded-lg md:col-span-2 bg-green-50">
+                  <img
+                    src={uploadedUrl}
+                    className="object-cover w-16 h-16 border border-green-200 rounded-full"
+                    alt="Vista previa"
+                  />
+                  <p className="text-sm font-medium text-green-700">
+                    ¡Foto lista!
+                  </p>
                 </div>
               )}
 
               {formMessage && (
-                <p className={`text-sm md:col-span-2 ${formHasError ? 'text-red-500' : 'text-emerald-600'}`}>
+                <p
+                  className={`text-sm md:col-span-2 ${
+                    formHasError ? "text-red-500" : "text-emerald-600"
+                  }`}
+                >
                   {formMessage}
                 </p>
               )}
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={isSubmitting || isUploadingImage}
                 className="md:col-span-2 bg-[#0ACEE5] text-white py-2 rounded-full font-bold hover:bg-[#09bccf] disabled:bg-gray-300 transition-colors"
               >
-                {isSubmitting ? 'Guardando...' : 'Agregar local'}
+                {isSubmitting ? "Guardando..." : "Agregar local"}
               </button>
             </form>
           </div>
@@ -266,51 +352,62 @@ export default function StoreGrid({
       </div>
 
       {selectedStore && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-200"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 duration-200 bg-black/60 animate-in fade-in"
           onClick={() => setSelectedStore(null)}
         >
-          <div 
-            className="relative mx-auto w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl transform transition-all"
+          <div
+            className="relative w-full max-w-xl mx-auto overflow-hidden transition-all transform bg-white shadow-2xl rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative h-48 w-full bg-gray-100 flex items-center justify-center">
-              <div className="h-32 w-32 overflow-hidden rounded-full border-4 border-[#0ACEE5] bg-white shadow-md">
-                <img 
-                  src={getStoreImageUrl(selectedStore)} 
-                  alt={selectedStore.nombreLocal} 
-                  className="h-full w-full object-cover" 
-                   // QUITAMOS EL STYLE DEL MODAL TAMBIÉN
-                  onError={(e) => { e.currentTarget.src = defaultLogo }}
-                />
-              </div>
-              <button 
-                onClick={() => setSelectedStore(null)}
-                className="absolute right-4 top-4 rounded-full bg-white/90 p-2 text-gray-600 hover:bg-white hover:text-red-500 transition-colors shadow-sm"
-              >
-                ✕ Cerrar
-              </button>
+            <div className="relative w-full overflow-hidden h-80 sm:h-96 rounded-t-3xl bg-gray-100">
+              <img
+                src={getStoreImageUrl(selectedStore)}
+                alt={selectedStore.nombreLocal}
+                className="absolute inset-0 w-full h-full min-w-full min-h-full object-cover object-top rounded-none"
+                loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = defaultLogo;
+                  e.currentTarget.onerror = null;
+                }}
+              />
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
             </div>
-            
+
             <div className="p-6 space-y-4">
               <div className="text-center sm:text-left">
-                <h3 className="text-2xl font-bold text-gray-900">{selectedStore.nombreLocal}</h3>
-                <p className="text-gray-600 text-lg">{selectedStore.actividad}</p>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {selectedStore.nombreLocal}
+                </h3>
+                <p className="text-lg text-gray-600">
+                  {selectedStore.actividad}
+                </p>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl bg-gray-50 p-4 border border-gray-100">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Ubicación</p>
-                  <p className="text-sm font-semibold mt-1 text-gray-800">Local {selectedStore.numeroLocal}</p>
-                  <p className="text-xs text-gray-500">{selectedStore.planta}</p>
+                <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
+                  <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">
+                    Ubicación
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-gray-800">
+                    Local {selectedStore.numeroLocal}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Planta {selectedStore.planta}
+                  </p>
                 </div>
-                <div className="rounded-xl bg-gray-50 p-4 border border-gray-100">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Categoría</p>
-                  <p className="text-sm font-semibold mt-1 text-gray-800">{selectedStore.categoria}</p>
+                <div className="p-4 border border-gray-100 rounded-xl bg-gray-50">
+                  <p className="text-xs font-bold tracking-wider text-gray-400 uppercase">
+                    Categoría
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-gray-800">
+                    {selectedStore.categoria}
+                  </p>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={() => setSelectedStore(null)}
                 className="w-full rounded-full bg-[#0ACEE5] py-3 font-bold text-white hover:bg-[#09bccf] transition-colors shadow-lg shadow-cyan-500/30"
               >
@@ -321,5 +418,5 @@ export default function StoreGrid({
         </div>
       )}
     </div>
-  )
+  );
 }
