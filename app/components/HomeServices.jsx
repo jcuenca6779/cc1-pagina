@@ -8,6 +8,7 @@ import {
   Landmark,
   Shield,
   ShieldCheck,
+  Store,
 } from "lucide-react";
 
 const SERVICES = [
@@ -39,6 +40,16 @@ const SERVICES = [
     description:
       "Sistema de seguridad y vigilancia permanente para tranquilidad de nuestros visitantes.",
   },
+
+  // ✅ NUEVO
+  {
+    id: "locales-comerciales",
+    icon: Store,
+    title: "Locales comerciales",
+    description:
+      "El CC1 cuenta con una variedad de locales comerciales con productos y servicios para distintos públicos, impulsando el comercio local en Portoviejo.",
+  },
+
   {
     id: "sala-conferencias",
     icon: Presentation,
